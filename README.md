@@ -24,3 +24,29 @@ scram b clean; scram b -j 8
 
 
 
+
+
+
+# Extra:
+
+### List all branches in the root file:
+
+```
+TObjArray* branches = Events->GetListOfBranches();
+for (int i=0; i<branches->GetEntries(); i++) { cout << branches->At(i)->GetName() << endl; }
+```
+
+
+### Check the status of your lxplus/cmslpc tasks using a web-based GUI:
+
+> Don't forget to change XXX with the machine that you're conencted for LPC machines. 
+
+```
+ssh -L localhost:8787:localhost:8787 asimsek@cmslpcXXX.fnal.gov
+```
+
+Navigate to `http://localhost:8787` on your browser.
+
+
+
+
