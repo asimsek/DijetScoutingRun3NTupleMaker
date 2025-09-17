@@ -29,18 +29,18 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   triggerResult_  = new std::vector<bool>();
   triggerName_    = new std::vector<std::string>();
 
-  ptAK4_          = new std::vector<float>();  etaAK4_ = new std::vector<float>();
-  phiAK4_         = new std::vector<float>();  massAK4_ = new std::vector<float>();
-  energyAK4_      = new std::vector<float>();  areaAK4_ = new std::vector<float>();
-  chfAK4_         = new std::vector<float>();  nhfAK4_ = new std::vector<float>();
-  phfAK4_         = new std::vector<float>();  elfAK4_ = new std::vector<float>();
-  mufAK4_         = new std::vector<float>();  hf_hfAK4_ = new std::vector<float>();
-  hf_emfAK4_      = new std::vector<float>();  hofAK4_ = new std::vector<float>();
+  ptAK4_          = new std::vector<float>();      etaAK4_        =  new std::vector<float>();
+  phiAK4_         = new std::vector<float>();      massAK4_       =  new std::vector<float>();
+  energyAK4_      = new std::vector<float>();      areaAK4_       =  new std::vector<float>();
+  chfAK4_         = new std::vector<float>();      nhfAK4_        =  new std::vector<float>();
+  phfAK4_         = new std::vector<float>();      elfAK4_        =  new std::vector<float>();
+  mufAK4_         = new std::vector<float>();      hf_hfAK4_      =  new std::vector<float>();
+  hf_emfAK4_      = new std::vector<float>();      hofAK4_        =  new std::vector<float>();
 
-  idLAK4_         = new std::vector<int>();    idTAK4_ = new std::vector<int>();
-  chHadMultAK4_   = new std::vector<int>();    neHadMultAK4_ = new std::vector<int>();
-  phoMultAK4_     = new std::vector<int>();    elMultAK4_ = new std::vector<int>();
-  muMultAK4_      = new std::vector<int>();    hfHadMultAK4_ = new std::vector<int>();
+  idLAK4_         = new std::vector<int>();        idTAK4_        =  new std::vector<int>();
+  chHadMultAK4_   = new std::vector<int>();        neHadMultAK4_  =  new std::vector<int>();
+  phoMultAK4_     = new std::vector<int>();        elMultAK4_     =  new std::vector<int>();
+  muMultAK4_      = new std::vector<int>();        hfHadMultAK4_  =  new std::vector<int>();
   hfEmMultAK4_    = new std::vector<int>();
 
 
@@ -92,8 +92,7 @@ void ScoutingTreeMakerRun3::beginJob()
   outTree_->Branch("hfHadMultAK4"             ,"vector<int>"       ,&hfHadMultAK4_         );
   outTree_->Branch("hfEmMultAK4"              ,"vector<int>"       ,&hfEmMultAK4_          );
 
-
-  //------------------------------------------------------------------
+  //------- Trigger
   outTree_->Branch("triggerResult"            ,"vector<bool>"      ,&triggerResult_        );
   outTree_->Branch("triggerName"              ,"vector<string>"    ,&triggerName_          );
 
@@ -137,11 +136,9 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     for (int itrig = 0; itrig != ntrigs; ++itrig) {
       const string &trigName = triggerNames_.triggerName(itrig);
       bool accept = hltresults->accept(itrig); 
-      //cout << trigName << endl;
 
       for(unsigned i=0;i<vtriggerSelection_.size();i++) {
         if(trigName.compare(0,vtriggerSelection_[i].length(),vtriggerSelection_[i])==0){
-          //cout << "trig = " << trigName << ", pass = " << accept << endl;
           triggerName_    ->push_back( trigName );
           triggerResult_  ->push_back( accept   );
 
