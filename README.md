@@ -6,10 +6,9 @@
 - [Setup Analysis Environment](#setup-analysis-environment)
 - [Datasets](#datasets)
    + [Run3 Scouting Datasets](#run3-scouting-datasets)
+   + [Run3 Monitoring Datasets](#run3-monitoring-datasets-1)
    + [Run3 QCD MC Samples](#run3-qcd-mc-samples)
    + [CMS DAS Queries](#cms-das-queries)
-      - [Run3 Scouting Datasets](#run3-scouting-datasets-1)
-      - [Run3 QCD MC Samples](#run3-qcd-mc-samples-1)
 - [Extras](#extras)
 - [Useful Links](#useful-links)
 
@@ -48,7 +47,7 @@ voms-proxy-init --voms cms --valid 192:00
 
 |<sup><sub>2024 Datasets</sub></sup>|<sup><sub>2025 Datasets</sub></sup>|
 |--|--|
-|<sup><sub>/ScoutingPFRun3/Run2024C-v1/HLTSCOUT</sub></sup>|<sup><sub>/ScoutingPFRun3/Run2024B-v1/HLTSCOUT</sub></sup>|
+|<sup><sub>/ScoutingPFRun3/Run2024C-v1/HLTSCOUT</sub></sup>|<sup><sub>/ScoutingPFRun3/Run2025B-v1/HLTSCOUT</sub></sup>|
 |<sup><sub>/ScoutingPFRun3/Run2024D-v1/HLTSCOUT</sub></sup>|<sup><sub>/ScoutingPFRun3/Run2025C-v1/HLTSCOUT</sub></sup>|
 |<sup><sub>/ScoutingPFRun3/Run2024E-v1/HLTSCOUT</sub></sup>|<sup><sub>/ScoutingPFRun3/Run2025D-v1/HLTSCOUT</sub></sup>|
 |<sup><sub>/ScoutingPFRun3/Run2024F-v1/HLTSCOUT</sub></sup>||
@@ -56,6 +55,18 @@ voms-proxy-init --voms cms --valid 192:00
 |<sup><sub>/ScoutingPFRun3/Run2024H-v1/HLTSCOUT</sub></sup>||
 |<sup><sub>/ScoutingPFRun3/Run2024I-v1/HLTSCOUT</sub></sup>||
 
+
+### Run3 Monitoring Datasets
+
+|<sup><sub>2024 Datasets</sub></sup>|<sup><sub>2025 Datasets</sub></sup>|
+|--|--|
+|<sup><sub>/ScoutingPFMonitor/Run2024C-v1/RAW</sub></sup>|<sup><sub>/ScoutingPFMonitor/Run2024B-v1/RAW</sub></sup>|
+|<sup><sub>/ScoutingPFMonitor/Run2024D-v1/RAW</sub></sup>|<sup><sub>/ScoutingPFMonitor/Run2025C-v1/RAW</sub></sup>|
+|<sup><sub>/ScoutingPFMonitor/Run2024E-v1/RAW</sub></sup>|<sup><sub>/ScoutingPFMonitor/Run2025D-v1/RAW</sub></sup>|
+|<sup><sub>/ScoutingPFMonitor/Run2024F-v1/RAW</sub></sup>|<sup><sub>/ScoutingPFMonitor/Run2025E-v1/RAW</sub></sup>|
+|<sup><sub>/ScoutingPFMonitor/Run2024G-v1/RAW</sub></sup>|<sup><sub>/ScoutingPFMonitor/Run2025F-v1/RAW</sub></sup>|
+|<sup><sub>/ScoutingPFMonitor/Run2024H-v1/RAW</sub></sup>||
+|<sup><sub>/ScoutingPFMonitor/Run2024I-v1/RAW</sub></sup>||
 
 
 ### Run3 QCD MC Samples
@@ -95,6 +106,17 @@ voms-proxy-init --voms cms --valid 192:00
 
 ```
 ./utils/dasgoclient --query='dataset status=* dataset=/ScoutingPFRun3/Run2025*/HLTSCOUT'`
+```
+
+
+### Run3 Monitoring Datasets
+
+```
+./utils/dasgoclient --query='dataset status=* dataset=/ScoutingPFMonitor/Run2024*/RAW'`
+```
+
+```
+./utils/dasgoclient --query='dataset status=* dataset=/ScoutingPFMonitor/Run2025*/RAW'`
 ```
 
 
