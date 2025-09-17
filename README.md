@@ -6,7 +6,7 @@
 - [Setup Analysis Environment](#setup-analysis-environment)
 - [Datasets](#datasets)
    + [Run3 Scouting Datasets](#run3-scouting-datasets)
-   + [Run3 Monitoring Datasets](#run3-monitoring-datasets-1)
+   + [Run3 Monitoring Datasets](#run3-monitoring-datasets)
    + [Run3 QCD MC Samples](#run3-qcd-mc-samples)
    + [CMS DAS Queries](#cms-das-queries)
 - [Extras](#extras)
@@ -109,7 +109,7 @@ voms-proxy-init --voms cms --valid 192:00
 ```
 
 
-### Run3 Monitoring Datasets
+#### Run3 Monitoring Datasets
 
 ```
 ./utils/dasgoclient --query='dataset status=* dataset=/ScoutingPFMonitor/Run2024*/RAW'`
