@@ -69,11 +69,21 @@ voms-proxy-init --voms cms --valid 192:00
 
 #### QCD MC Samples
 
-Require an active proxy with `voms-proxy-init --voms cms --valid 192:00`
+> [!IMPORTANT]
+> An active proxy is required to access and process CMS data.
 
-`./utils/dasgoclient --query='dataset status=* dataset=/QCD_Pt_*0to*0_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM'`
+```
+voms-proxy-init --voms cms --valid 192:00
+```
 
-`./utils/dasgoclient --query='dataset status=* dataset=/QCD_Pt_*0to*0_TuneCP5_13p6TeV_pythia8/Run3Winter22DRPremix-122X_mcRun3_2021_realistic_v9-v2/AODSIM'`
+
+```
+./utils/dasgoclient --query='dataset status=* dataset=/QCD_Pt_*0to*0_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM'`
+```
+
+```
+./utils/dasgoclient --query='dataset status=* dataset=/QCD_Pt_*0to*0_TuneCP5_13p6TeV_pythia8/Run3Winter22DRPremix-122X_mcRun3_2021_realistic_v9-v2/AODSIM'`
+```
 
 > [!NOTE]
 > Please note that we also used the `QCD_Pt_3200toInf_TuneCP5_13p6TeV_pythia8` sample in addition to these queries.
