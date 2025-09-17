@@ -46,23 +46,15 @@ voms-proxy-init --voms cms --valid 192:00
 
 ### Run3 Scouting Datasets
 
-|<sup><sub>2024 Datasets</sub></sup>|
-|--|
-|<sup><sub>/ScoutingPFRun3/Run2024C-v1/HLTSCOUT</sub></sup>|
-|<sup><sub>/ScoutingPFRun3/Run2024D-v1/HLTSCOUT</sub></sup>|
-|<sup><sub>/ScoutingPFRun3/Run2024E-v1/HLTSCOUT</sub></sup>|
-|<sup><sub>/ScoutingPFRun3/Run2024F-v1/HLTSCOUT</sub></sup>|
-|<sup><sub>/ScoutingPFRun3/Run2024G-v1/HLTSCOUT</sub></sup>|
-|<sup><sub>/ScoutingPFRun3/Run2024H-v1/HLTSCOUT</sub></sup>|
-|<sup><sub>/ScoutingPFRun3/Run2024I-v1/HLTSCOUT</sub></sup>|
-
-
-|<sup><sub>2025 Datasets</sub></sup>|
-|--|
-|<sup><sub>/ScoutingPFRun3/Run2024B-v1/HLTSCOUT</sub></sup>|
-|<sup><sub>/ScoutingPFRun3/Run2025C-v1/HLTSCOUT</sub></sup>|
-|<sup><sub>/ScoutingPFRun3/Run2025D-v1/HLTSCOUT</sub></sup>|
-
+|<sup><sub>2024 Datasets</sub></sup>|<sup><sub>2025 Datasets</sub></sup>|
+|--|--|
+|<sup><sub>/ScoutingPFRun3/Run2024C-v1/HLTSCOUT</sub></sup>|<sup><sub>/ScoutingPFRun3/Run2024B-v1/HLTSCOUT</sub></sup>|
+|<sup><sub>/ScoutingPFRun3/Run2024D-v1/HLTSCOUT</sub></sup>|<sup><sub>/ScoutingPFRun3/Run2025C-v1/HLTSCOUT</sub></sup>|
+|<sup><sub>/ScoutingPFRun3/Run2024E-v1/HLTSCOUT</sub></sup>|<sup><sub>/ScoutingPFRun3/Run2025D-v1/HLTSCOUT</sub></sup>|
+|<sup><sub>/ScoutingPFRun3/Run2024F-v1/HLTSCOUT</sub></sup>||
+|<sup><sub>/ScoutingPFRun3/Run2024G-v1/HLTSCOUT</sub></sup>||
+|<sup><sub>/ScoutingPFRun3/Run2024H-v1/HLTSCOUT</sub></sup>||
+|<sup><sub>/ScoutingPFRun3/Run2024I-v1/HLTSCOUT</sub></sup>||
 
 
 
