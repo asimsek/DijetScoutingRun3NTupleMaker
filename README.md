@@ -10,9 +10,9 @@
       + [CMS DAS Queries](#cms-das-queries)
          - [QCD MC Samples](#qcd-mc-samples-1)
    * [Extra](#extra)
-      + [List all branches in the root file](#list-all-branches-in-the-root-file)
-      + [Check the status of your lxplus/cmslpc tasks using a web-based GUI](#check-the-status-of-your-lxpluscmslpc-tasks-using-a-web-based-gui)
-      + [How to compute MC cross-sections with GenXSecAnalyzer](#how-to-compute-mc-cross-sections-with-genxsecanalyzer)
+      + [List all branches in the root file](#1-list-all-branches-in-the-root-file)
+      + [Check the status of your lxplus/cmslpc tasks using a web-based GUI](#2-check-the-status-of-your-lxpluscmslpc-tasks-using-a-web-based-gui)
+      + [How to compute MC cross-sections with GenXSecAnalyzer](#3-how-to-compute-mc-cross-sections-with-genxsecanalyzer)
 
 ## Setup Analysis Environment
 
