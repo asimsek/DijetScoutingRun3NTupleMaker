@@ -48,7 +48,7 @@ voms-proxy-init --voms cms --valid 192:00
 
 ### QCD MC Samples
 
-|QCD Samples (Run3Winter22 MiniAOD):| cross section (xsec) |
+| <sup><sub>QCD Samples (Run3Winter22 MiniAOD):</sub></sup>| <sup><sub>cross section (xsec) </sub></sup>|
 |--|--|
 | <sup><sub>/QCD_Pt_50to80_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>16740000</sub></sup> |
 | <sup><sub>/QCD_Pt_80to120_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>2511000</sub></sup> |
