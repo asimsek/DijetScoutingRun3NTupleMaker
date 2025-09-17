@@ -52,7 +52,6 @@ def _store_path(s):
 # DAS wrappers (portable flags)
 # -------------------------------
 def das_datasets(pattern):
-    # -limit 0 removes the 250-cap
     cmd = ["dasgoclient", "-limit", "0", "-query", f"dataset={pattern}"]
     _, out, _ = _run(cmd)
     return [l.strip() for l in out.splitlines() if l.strip()]
@@ -182,6 +181,8 @@ options.register('redirector', _redirector(), VarParsing.multiplicity.singleton,
 # internal flag: parent orchestrates, child actually runs the Process
 options.register('childMode', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool,
                  "INTERNAL: run the CMSSW Process (do not orchestrate)")
+options.register('fileList', '', VarParsing.multiplicity.singleton, VarParsing.varType.string,
+                 "Path to a newline-delimited list of files (internal; used by wrapper)")
 
 options.parseArguments()
 cfg_abspath = os.path.abspath(__file__)
@@ -199,14 +200,14 @@ if options.dataset and not options.combineSamples and not options.childMode:
         rows = []
         for i, ds in enumerate(ds_list, 1):
             print(f"{red_prefix(i, len(ds_list))} {ds}")
-            # Optional: count files quickly
+            # count files quickly
             try:
                 nf = len(das_files(ds))
                 print(f"  -> {nf} file(s) in this dataset")
             except Exception:
                 pass
 
-            # Run a child job (non-streaming here; could be upgraded to streaming per dataset if you like)
+            # Run a child job
             rc, x, dx, logtxt = run_one_dataset_with_cmsrun(
                 cfg_abspath, ds, options.maxEvents, options.redirector
             )
@@ -235,6 +236,11 @@ if options.dataset and not options.combineSamples and not options.childMode:
 # Resolve to file list (single or combined)
 # -------------------------------
 file_names = list(options.inputFiles)
+
+# If a file list was provided (from parent), prefer it
+if (not file_names) and getattr(options, "fileList", ""):
+    with open(options.fileList) as fh:
+        file_names = [ln.strip() for ln in fh if ln.strip()]
 
 if (not file_names) and options.dataset:
     tokens = parse_dataset_arg(options.dataset)
@@ -272,6 +278,16 @@ if not options.childMode:
     nfiles = len(file_names)
     print(f"{ANSI_RED}[genXsec]{ANSI_RESET} Total input files: {nfiles}")
 
+    # Write file list for the child (avoids giant command lines)
+    import tempfile
+    tmp_path = None
+    if file_names:
+        tf = tempfile.NamedTemporaryFile('w', delete=False, prefix='genxsec_files_', suffix='.txt')
+        for f in file_names:
+            tf.write(f + "\n")
+        tf.close()
+        tmp_path = tf.name
+
     # Launch child that actually runs the CMSSW Process; parent reformats output
     child_args = [
         "cmsRun", cfg_abspath,
@@ -281,7 +297,15 @@ if not options.childMode:
         f"combineSamples={str(bool(options.combineSamples))}",
         "childMode=True",
     ]
+    if tmp_path:
+        child_args.append(f"fileList={tmp_path}")
+
     rc, full_log = stream_child_with_counter(child_args, nfiles)
+
+    # Clean up the temp file
+    if tmp_path:
+        try: os.unlink(tmp_path)
+        except Exception: pass
 
     # Parse and print xsec summary (leave exact analyzer lines as-is if they appeared)
     x, dx = parse_xsec_from_log(full_log)
