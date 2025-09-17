@@ -95,14 +95,14 @@ voms-proxy-init --voms cms --valid 192:00
 
 ## Extra
 
-### List all branches in the root file
+### 1) List all branches in the root file
 
 ```
 TObjArray* branches = Events->GetListOfBranches();
 for (int i=0; i<branches->GetEntries(); i++) { cout << branches->At(i)->GetName() << endl; }
 ```
 
-### Check the status of your lxplus/cmslpc tasks using a web-based GUI
+### 2) Check the status of your lxplus/cmslpc tasks using a web-based GUI
 
 > [!WARNING]
 > Don't forget to change XXX with the machine that you're conencted for LPC machines.
@@ -114,7 +114,7 @@ ssh -L localhost:8787:localhost:8787 asimsek@cmslpcXXX.fnal.gov
 Navigate to `http://localhost:8787` on your browser.
 
 
-### How to compute MC cross-sections with GenXSecAnalyzer
+### 3) How to compute MC cross-sections with GenXSecAnalyzer
 
 This tool allows you to use existing cmssw library ([GenXSecAnalyzer.cc](https://github.com/cms-sw/cmssw/blob/master/GeneratorInterface/Core/plugins/GenXSecAnalyzer.cc)) to compute MC cross sections in a more accurate way. This is useful when there is no xsec information given on the [XSDB](https://xsecdb-xsdb-official.app.cern.ch/xsdb/).
 
