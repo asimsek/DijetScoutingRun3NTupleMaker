@@ -141,10 +141,21 @@ voms-proxy-init --voms cms --valid 192:00
 
 ### 1) List all branches in the official root file
 
+> [!NOTE]
+> You need an active proxy (voms) (and a prefix `root://cms-xrd-global.cern.ch/` for the root paths if you're trying to access outside the CERN machines (lxplus), e.g.: LPC-machines) to be able to access root file and list the branches.
+
+
 ```
-TObjArray* branches = Events->GetListOfBranches();
-for (int i=0; i<branches->GetEntries(); i++) { cout << branches->At(i)->GetName() << endl; }
+cmsenv
+./utils/edmDumpEventFields root://cms-xrd-global.cern.ch//store/data/Run2025C/ScoutingPFRun3/HLTSCOUT/v1/000/392/925/00000/b95d5cc9-62b2-4b3b-a0f9-d0d79b52a85d.root --tree Events --filter Run3ScoutingPFJets_hltScoutingPFPacker --what fields --show-types
 ```
+
+> [!TIP]
+> Auto-selects the largest tree if `--tree` is missing. <br>
+> `--show-types` displays object types (float, vector, etc.) <br>
+> `--summary` prints a compact per-branch table. <br>
+> `--format {json|yaml|csv|raw}`
+
 
 ### 2) Check the status of your lxplus/cmslpc tasks using a web-based GUI
 
@@ -167,16 +178,16 @@ This tool allows you to use existing cmssw library ([GenXSecAnalyzer.cc](https:/
 
 
 ```
-cmsRun utils/genXsec_cfg.py inputFiles="/store/mc/Run3Winter22DRPremix/QCD_Pt_50to80_TuneCP5_13p6TeV_pythia8/AODSIM/122X_mcRun3_2021_realistic_v9-v2/60000/00013e73-2f84-4d54-a6f5-cfdfafb08614.root" maxEvents=-1
+cmsRun utils/genXsec_cfg inputFiles="/store/mc/Run3Winter22DRPremix/QCD_Pt_50to80_TuneCP5_13p6TeV_pythia8/AODSIM/122X_mcRun3_2021_realistic_v9-v2/60000/00013e73-2f84-4d54-a6f5-cfdfafb08614.root" maxEvents=-1
 ```
 
 ```
-cmsRun utils/genXsec_cfg.py dataset="/QCD_Pt_2400to3200_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM" maxEvents=-1
+cmsRun utils/genXsec_cfg dataset="/QCD_Pt_2400to3200_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM" maxEvents=-1
 ```
 
 
 > [!TIP]
-> Wildcard dataset searches are allowed. Please use star (\*) character in the dataset query while using the `genXsec_cfg.py` script. (e.g.: `/QCD_Pt_*0to*0_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM'`).
+> Wildcard dataset searches are allowed. Please use star (\*) character in the dataset query while using the `genXsec_cfg` tool. (e.g.: `/QCD_Pt_*0to*0_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM'`).
 
 
 > [!TIP]
@@ -188,6 +199,12 @@ cmsRun utils/genXsec_cfg.py dataset="/QCD_Pt_2400to3200_TuneCP5_13p6TeV_pythia8/
 > For more: https://cms-generators.docs.cern.ch/useful-tools-and-links/HowToGenXSecAnalyzer/#during-the-production-of-mc-samples
 
 
+### 4) How to print available plugins within CMSSW
+
+```
+edmPluginDump | grep -i scouting
+```
+
 
 ## Useful Links
 
@@ -197,6 +214,7 @@ cmsRun utils/genXsec_cfg.py dataset="/QCD_Pt_2400to3200_TuneCP5_13p6TeV_pythia8/
  + [Run3 JERC](https://cms-jerc.web.cern.ch/)
  + [Run3 PdmV](https://twiki.cern.ch/twiki/bin/view/CMS/PdmVRun3Analysis)
  + [JES/JER for Run3 Scouting](https://twiki.cern.ch/twiki/bin/view/CMSPublic/)
+ + [CMS Connect to submit jobs to CERN HTCondor (faster than the LPC condor)](https://uscms.org/uscms_at_work/computing/setup/batch_systems.shtml#CMSConnect)
 
 
 

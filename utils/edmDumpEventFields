@@ -1,0 +1,533 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+EDM TTree inspector by Ali Eren SIMSEK.
+
+Features:
+  ## Auto-finds the largest tree if given tree name (eg.: 'Events') is not exist.).
+  ## --show-types to display field/return types (float, vector, etc.).
+  ## --summary prints a compact per-branch table (PrettyTable).
+  ## --format supports "json, yaml, csv, raw". 'raw' to print fully-qualified raw names (unsanitized; includes intermediate prefixes).
+
+Examples:
+  ./edmDumpEventFields.py FILE.root --tree Events --what both
+  ./edmDumpEventFields.py FILE.root --filter hltScoutingPFPacker --what fields --show-types
+  ./edmDumpEventFields.py FILE.root --format json
+  ./edmDumpEventFields.py FILE.root --summary
+"""
+
+import argparse, collections, csv, json, re, sys
+
+# ---------- ANSI (call-time colors) ----------
+class Ansi:
+    RESET = "\x1b[0m"; BOLD = "\x1b[1m";
+    RED   = "\x1b[31m"; GREEN = "\x1b[32m"; YELLOW = "\x1b[33m"; CYAN = "\x1b[36m"; WHITE = "\x1b[37m";
+    BRIGHT_RED = "\x1b[91m"; BRIGHT_GREEN = "\x1b[92m"; BRIGHT_YELLOW = "\x1b[93m"; BRIGHT_BLUE = "\x1b[94m"; 
+    BRIGHT_MAGENTA = "\x1b[95m"; BRIGHT_CYAN = "\x1b[96m"; BRIGHT_WHITE = "\x1b[97m";
+
+def colorize(s, color=None, enable=True, bold=False):
+    if not enable or not color:
+        return s
+    return (Ansi.BOLD if bold else "") + color + s + Ansi.RESET
+
+# ---------- ROOT setup ----------
+try:
+    import ROOT
+except Exception:
+    print("PyROOT is required. Run inside a CMSSW environment (cmsenv).", file=sys.stderr)
+    raise
+
+ROOT.gSystem.Load("libFWCoreFWLite")
+if hasattr(ROOT, "FWLiteEnabler"):
+    ROOT.FWLiteEnabler.enable()
+
+for lib in (
+    "libDataFormatsScouting",
+    "libDataFormatsPatCandidates",
+    "libDataFormatsJetReco",
+    "libDataFormatsCandidate",
+    "libDataFormatsCommon",
+):
+    try:
+        ROOT.gSystem.Load(lib)
+    except Exception:
+        pass
+
+try:
+    ROOT.gInterpreter.Declare(r'''
+        #include "DataFormats/PatCandidates/interface/Jet.h"
+        #include "DataFormats/JetReco/interface/PFJet.h"
+        #include "DataFormats/JetReco/interface/GenJet.h"
+    ''')
+except Exception:
+    pass
+
+AnglePat = re.compile(r"<(.*?)>")  # non-greedy angle bracket match
+
+# ---------- helpers ----------
+def _iter_any(seq):
+    if not seq: return
+    n = None
+    for meth in ("GetEntries", "GetSize"):
+        try:
+            n = getattr(seq, meth)(); break
+        except Exception:
+            pass
+    if n is None:
+        try:
+            for it in seq: yield it
+        except Exception:
+            return
+    else:
+        for i in range(int(n)): yield seq.At(i)
+
+def find_trees(dirobj):
+    for key in _iter_any(dirobj.GetListOfKeys()):
+        try: obj = key.ReadObj()
+        except Exception: continue
+        if obj and obj.InheritsFrom("TTree"): yield obj
+        elif obj and obj.InheritsFrom("TDirectory"): yield from find_trees(obj)
+
+def select_tree(tf, tree_name=None):
+    if tree_name:
+        t = tf.Get(tree_name)
+        if t and t.InheritsFrom("TTree"): return t
+
+    best, best_n = None, -1
+    for tr in find_trees(tf):
+        try: n = int(tr.GetEntries())
+        except Exception: n = -1
+        if n > best_n: best, best_n = tr, n
+    return best
+
+def is_branch_split(br):
+    sub = br.GetListOfBranches()
+    if sub and getattr(sub, "GetEntries", lambda: 0)() > 0: return True
+    for lf in _iter_any(br.GetListOfLeaves()):
+        if "." in (lf.GetName() or ""): return True
+    return False
+
+def collect_split_rel_paths(tree, product):
+    out = []
+    if not product: return out
+    prefix = (product or "").rstrip(".")
+    for lf in _iter_any(tree.GetListOfLeaves()):
+        nm = lf.GetName() or ""
+        if nm.startswith(prefix + "."):  rel = nm[len(prefix) + 1:]
+        elif nm.startswith(prefix + ".."): rel = nm[len(prefix) + 2:]
+        else: continue
+        out.append(rel)
+    return sorted(set(out))
+
+def unwrap_type_name(tname):
+    t = (tname or "").replace("const ","").replace("&","").replace("*","").strip()
+    while t.startswith("edm::Wrapper<"):
+        m = AnglePat.search(t)
+        if not m: break
+        t = (m.group(1) or "").strip()
+    for pref in ("std::vector<","vector<","edm::OwnVector<","edm::SortedCollection<"):
+        if t.startswith(pref):
+            m = AnglePat.search(t)
+            if m:
+                inner, depth, buf = m.group(1), 0, []
+                for ch in inner:
+                    if ch == "<": depth += 1
+                    elif ch == ">": depth -= 1
+                    elif ch == "," and depth == 0: break
+                    buf.append(ch)
+                t = "".join(buf).strip()
+            break
+    return t
+
+def product_type_from_branch(br):
+    cn = br.GetClassName() if isinstance(br, ROOT.TBranchElement) else ""
+    if not cn:
+        leaves = br.GetListOfLeaves(); lf0 = None
+        if leaves:
+            try: lf0 = leaves.At(0) if leaves.GetEntries() > 0 else None
+            except Exception:
+                for lf in _iter_any(leaves): lf0 = lf; break
+        if lf0: cn = lf0.GetTypeName() or ""
+    return cn
+
+def class_from_branch(br):
+    raw = product_type_from_branch(br)
+    if not raw: return None, ""
+    unwrapped = unwrap_type_name(raw)
+    c = ROOT.TClass.GetClass(unwrapped) or (
+        ROOT.TClass.GetClass("std::string") if unwrapped == "string" else ROOT.TClass.GetClass(raw)
+    )
+    return c, unwrapped
+
+def is_vector_tclass(tcls):
+    try: return bool(tcls) and tcls.IsSTLContainer() and "vector<" in (tcls.GetName() or "")
+    except Exception: return False
+
+def element_from_container(tcls, typename):
+    try:
+        if tcls and tcls.IsSTLContainer():
+            proxy = tcls.GetCollectionProxy()
+            vcl = proxy.GetValueClass() if proxy else None
+            if vcl: return vcl, vcl.GetName()
+    except Exception:
+        pass
+    m = AnglePat.search(typename or "")
+    el = ""
+    if m:
+        inner, depth, buf = m.group(1), 0, []
+        for ch in inner:
+            if ch == "<": depth += 1
+            elif ch == ">": depth -= 1
+            elif ch == "," and depth == 0: break
+            buf.append(ch)
+        el = "".join(buf).strip()
+    return (ROOT.TClass.GetClass(el) if el else None), el
+
+def resolve_branch_classes(br):
+    br_class, br_typename = class_from_branch(br)
+    if not br_class: return None, "", None, ""
+    if is_vector_tclass(br_class) or br_typename.startswith(("std::vector<","vector<")):
+        el_class, el_typename = element_from_container(br_class, br_typename)
+        return br_class, br_typename, el_class, el_typename
+    return br_class, br_typename, None, ""
+
+# ---------- name sanitation ----------
+DROP_TOKENS_DEFAULT = {"obj", "present"}
+
+def sanitize_path(path, remove_underscores=True, drop_tokens=DROP_TOKENS_DEFAULT):
+    parts = [p for p in path.split(".") if p]
+    out = []
+    for p in parts:
+        q = p.replace("_","") if remove_underscores else p
+        if drop_tokens and q in drop_tokens:  # skip tokens like "obj", "present"
+            continue
+        if q == "": continue
+        out.append(q)
+    return ".".join(out)
+
+# ---------- type helpers ----------
+LEAF_TYPE_MAP = {
+    "Char_t":"char","UChar_t":"unsigned char","Short_t":"short","UShort_t":"unsigned short",
+    "Int_t":"int","UInt_t":"unsigned int","Float_t":"float","Double_t":"double",
+    "Bool_t":"bool","Long64_t":"long long","ULong64_t":"unsigned long long","Double32_t":"double","Float16_t":"float"
+}
+
+def leaf_cpp_type(tleaf):
+    if not tleaf: return ""
+    tn = tleaf.GetTypeName() or ""
+    return LEAF_TYPE_MAP.get(tn, tn)
+
+def method_is_const(m):
+    try: return bool(m.IsConst())
+    except Exception:
+        proto = m.GetPrototype() if hasattr(m,"GetPrototype") else ""
+        return proto.strip().endswith(" const")
+
+def method_return_type(m):
+    if hasattr(m,"GetReturnTypeName"):
+        try:
+            rt = m.GetReturnTypeName()
+            if rt: return rt.replace("std::","").strip()
+        except Exception: pass
+    proto = m.GetPrototype() if hasattr(m,"GetPrototype") else (m.GetName()+"()")
+    name = m.GetName()
+    ix = proto.rfind("::"+name+"(")
+    token = proto[:ix].strip() if ix != -1 else (proto.split()[0] if proto.split() else "")
+    token = token.replace("virtual ","").replace("static ","").replace("std::","").strip()
+    parts = token.split()
+    return parts[-1] if parts else token
+
+NUMERIC_RTYPES = {
+    "float","double","bool","char","signed char","unsigned char","short","unsigned short","int","unsigned int",
+    "long","unsigned long","long long","unsigned long long","size_t"
+}
+EXCLUDE_METHODS = {"print","clone","begin","end"}
+EXCLUDE_PREFIX  = ("set","add","update","clear","embed","unpack","scale","construct")
+
+def list_clean_methods(tclass):
+    if not tclass: return []
+    lst = tclass.GetListOfAllPublicMethods() or tclass.GetListOfMethods()
+    if not lst: return []
+    out, seen = [], set()
+    for m in _iter_any(lst):
+        nm = m.GetName()
+        if nm.startswith("~") or nm in EXCLUDE_METHODS or any(nm.startswith(p) for p in EXCLUDE_PREFIX):
+            continue
+        rtype = method_return_type(m)
+        try: nargs = int(m.GetListOfMethodArgs().GetSize()) if m.GetListOfMethodArgs() else 0
+        except Exception: nargs = 0
+        if nargs != 0 or not method_is_const(m) or rtype not in NUMERIC_RTYPES:
+            continue
+        if nm in seen: continue
+        seen.add(nm)
+        out.append({"name": nm, "return": rtype})
+    out.sort(key=lambda x: x["name"])
+    return out
+
+# ---------- fields collection (with types) ----------
+def collect_fields(tree, br, max_depth_unsplit=2, original_names=False, want_types=False):
+    drop_tokens = None if original_names else DROP_TOKENS_DEFAULT
+    rm_underscores = not original_names
+
+    if is_branch_split(br):
+        prefix = br.GetName() or ""
+        rels = collect_split_rel_paths(tree, prefix)
+        paths = []
+        types_map = {}
+        for rel in rels:
+            full = f"{prefix.rstrip('.')}.{rel}"
+            tleaf = tree.GetLeaf(full)
+            typ = leaf_cpp_type(tleaf) if want_types else ""
+            spath = sanitize_path(rel, remove_underscores=rm_underscores, drop_tokens=drop_tokens)
+            if not spath: continue
+            paths.append(spath)
+            if want_types: types_map[spath] = typ
+        return sorted(set(paths)), types_map, "split", None
+
+    tcls, typename = class_from_branch(br)
+    paths, types_map = [], {}
+    if tcls:
+        seen_types = set()
+        def walk(c, prefix="", depth=0):
+            if not c or depth >= max_depth_unsplit: return
+            dml = c.GetListOfDataMembers()
+            if not dml: return
+            for dm in _iter_any(dml):
+                name = dm.GetName()
+                if name in {"fBits","fUniqueID"}: continue
+                ftype = (dm.GetFullTypeName() or "").replace("const ","").replace("&","").replace("*","").strip()
+                here_rel = f"{prefix}.{name}" if prefix else name
+                spath = sanitize_path(here_rel, remove_underscores=rm_underscores, drop_tokens=drop_tokens)
+                if spath:
+                    paths.append(spath)
+                    if want_types: types_map[spath] = ftype
+                # try to drill into nested/class or vector<Inner>
+                inner = None
+                if ftype.startswith(("std::vector<","vector<")):
+                    m = AnglePat.search(ftype)
+                    if m: inner = m.group(1).split(",")[0].strip()
+                elif not ftype.startswith(("std::","vector<","edm::","ROOT::")) and ("::" in ftype or (ftype and ftype[0].isupper())):
+                    inner = ftype
+                if inner and inner not in seen_types:
+                    seen_types.add(inner)
+                    walk(ROOT.TClass.GetClass(inner), here_rel, depth+1)
+        walk(tcls)
+    return sorted(set(paths)), types_map, "unsplit", (typename if tcls else None)
+
+# ---------- tree building/printing ----------
+def build_trie(paths):
+    Trie = lambda: collections.defaultdict(Trie)
+    root = Trie()
+    for p in paths:
+        node = root
+        for part in p.split("."):
+            if not part: continue
+            node = node[part]
+    return root
+
+def _print_trie_rec(trie, types_map, indent, level, prefix, use_color, show_types):
+    for key in sorted(trie.keys()):
+        path = f"{prefix}.{key}" if prefix else key
+        suffix = ""
+        if show_types and types_map and not trie[key]:
+            typ = types_map.get(path, "")
+            if typ: suffix = f" : {typ}"
+        print(" " * (indent * level) + "- " + key + suffix)
+        _print_trie_rec(trie[key], types_map, indent, level+1, path, use_color, show_types)
+
+# ---------- per-branch printing ----------
+def print_branch(tree, br, show_fields=True, show_methods=True, use_color=True, max_depth=2, original_names=False, show_types=False):
+    print(colorize(f"\n[{br.GetName()}]", Ansi.BRIGHT_RED, use_color, bold=True))
+    if show_fields:
+        paths, types_map, _, _ = collect_fields(tree, br, max_depth_unsplit=max_depth, original_names=original_names, want_types=show_types)
+        print("  " + colorize(f"Fields (n={len(paths)})", Ansi.BRIGHT_CYAN, use_color))
+        if not paths:
+            print("    (none)")
+        else:
+            trie = build_trie(paths)
+            _print_trie_rec(trie, types_map if show_types else {}, indent=4, level=1, prefix="", use_color=use_color, show_types=show_types)
+
+    if show_methods:
+        br_cls, br_tn, el_cls, el_tn = resolve_branch_classes(br)
+        tcls = el_cls or br_cls
+        methods = list_clean_methods(tcls) if tcls else []
+        print("  " + colorize(f"Methods (n={len(methods)})", Ansi.BRIGHT_CYAN, use_color))
+        if not methods:
+            print("    (none)")
+        else:
+            for m in methods:
+                if show_types and m.get("return"):
+                    print(f"    - {m['name']}() : {m['return']}")
+                else:
+                    print(f"    - {m['name']}()")
+
+# ---------- JSON/YAML/CSV ----------
+def branch_dict(tree, br, max_depth=2, original_names=False, include_methods=True, include_types=True):
+    paths, types_map, mode, class_label = collect_fields(tree, br, max_depth_unsplit=max_depth, original_names=original_names, want_types=include_types)
+    entry = {
+        "name": br.GetName(),
+        "fields": {
+            "mode": mode,
+            "class": class_label,
+            "items": [{"path": p, **({"type": types_map.get(p)} if include_types else {})} for p in paths],
+            "tree": trie_to_dict(build_trie(paths)),
+        },
+    }
+    if include_methods:
+        br_cls, br_tn, el_cls, el_tn = resolve_branch_classes(br)
+        tcls = el_cls or br_cls
+        methods = [{"name": m["name"], **({"return": m["return"]} if include_types else {})} for m in (list_clean_methods(tcls) if tcls else [])]
+        entry["methods"] = {"class": (el_tn or br_tn) if tcls else None, "items": methods}
+    return entry
+
+def trie_to_dict(trie):
+    return {k: trie_to_dict(v) for k, v in trie.items()}
+
+def emit_csv(tree_name, branches_dict, file_path):
+    w = csv.writer(sys.stdout)
+    w.writerow(["tree", "branch", "kind", "name", "type"])
+    for b in branches_dict:
+        brname = b["name"]
+        for it in b["fields"]["items"]:
+            w.writerow([tree_name, brname, "field", it["path"], it.get("type","")])
+        for it in b.get("methods", {}).get("items", []):
+            w.writerow([tree_name, brname, "method", f"{it['name']}()", it.get("return","")])
+
+# ---------- raw printer ----------
+def emit_raw(tree, branches, max_depth, show_types=False):
+    for br in branches:
+        b = br.GetName()
+        printed = set()
+
+        def maybe_print(s):
+            if s not in printed:
+                print(s)
+                printed.add(s)
+
+        rels, types_map, _, _ = collect_fields(
+            tree, br,
+            max_depth_unsplit=max_depth,
+            original_names=True,
+            want_types=show_types
+        )
+
+        for rel in rels:
+            parts = [p for p in rel.split(".") if p]
+            for i in range(len(parts)):
+                rel_i = ".".join(parts[:i+1])
+                full  = f"{b}{rel_i}"
+
+                if show_types and rel_i in types_map:
+                    maybe_print(f"{full} : {types_map[rel_i]}")
+                else:
+                    maybe_print(full)
+
+# ---------- summary ----------
+def print_summary(tree, branches, max_depth, use_color):
+    try:
+        from prettytable import PrettyTable
+    except Exception:
+        print("ERROR: --summary requires PrettyTable. Try: pip install prettytable", file=sys.stderr)
+        sys.exit(6)
+    rows = []
+    for br in branches:
+        paths, _, _, _ = collect_fields(tree, br, max_depth_unsplit=max_depth, original_names=False, want_types=False)
+        br_cls, br_tn, el_cls, el_tn = resolve_branch_classes(br)
+        tcls = el_cls or br_cls
+        n_methods = len(list_clean_methods(tcls) if tcls else [])
+        rows.append((br.GetName(), len(paths), n_methods))
+    tbl = PrettyTable()
+    tbl.field_names = ["Branch", "Fields", "Methods"]
+    for r in rows: tbl.add_row(r)
+    print(colorize(f"=== Summary: {tree.GetName()} ===", Ansi.BRIGHT_CYAN, use_color, bold=True))
+    print(tbl)
+
+
+# ---------- main ----------
+def main():
+    ap = argparse.ArgumentParser(description="ROOT EDM TTree inspector (tree view; Fields/Methods; clean output).")
+    ap.add_argument("rootfile", help="Path or XRootD URL to .root file")
+    ap.add_argument("-t", "--tree", default="Events", help="Tree name (default: 'Events')")
+    ap.add_argument("--filter", help="Substring filter on branch name")
+    ap.add_argument("--what", choices=["fields","methods","both"], default="both", help="What to show in text mode")
+    ap.add_argument("--show-types", action="store_true", default=False, help="Show types next to names")
+    ap.add_argument("--max-depth", type=int, default=2, help="Max depth when introspecting unsplit classes")
+    ap.add_argument("--no-color", action="store_true", default=False, help="Disable ANSI color")
+    ap.add_argument("--summary", action="store_true", default=False, help="Print per-branch counts (PrettyTable) and exit")
+    ap.add_argument("--format", choices=["json","yaml","csv","raw"], default=None,
+                help="json|yaml|csv structured output; 'raw' prints fully-qualified unsanitized names")
+    args = ap.parse_args()
+
+    use_color = (not args.no_color) and (args.format is None) and sys.stdout.isatty()
+
+    f = ROOT.TFile.Open(args.rootfile)
+    if not f or f.IsZombie():
+        print(f"ERROR: could not open {args.rootfile}", file=sys.stderr)
+        if isinstance(args.rootfile, str) and args.rootfile.startswith("root://"):
+            print("Hint: ensure ROOT has XRootD support and the URL is accessible.", file=sys.stderr)
+        sys.exit(2)
+
+    t = select_tree(f, args.tree)
+    if not t:
+        print("No TTree found.", file=sys.stderr); f.Close(); sys.exit(3)
+
+    branches = [br for br in _iter_any(t.GetListOfBranches())]
+    if args.filter:
+        branches = [br for br in branches if args.filter in (br.GetName() or "")]
+    branches.sort(key=lambda b: b.GetName())
+
+    # Summary-only view
+    if args.summary and args.format is None:
+        print_summary(t, branches, args.max_depth, use_color)
+        f.Close(); return
+
+    # Structured outputs
+    if args.format:
+        if args.format == "raw":
+            emit_raw(t, branches, args.max_depth, show_types=args.show_types)
+            f.Close(); return
+        data = {
+            "file": args.rootfile,
+            "tree": t.GetName(),
+            "branches": [
+                branch_dict(t, br, max_depth=args.max_depth, original_names=False,
+                            include_methods=(args.what in ("methods","both")),
+                            include_types=args.show_types)
+                for br in branches
+            ]
+        }
+        if args.format == "json":
+            print(json.dumps(data, ensure_ascii=False))
+        elif args.format == "yaml":
+            try: import yaml
+            except Exception:
+                print("ERROR: PyYAML is required for --format yaml. Try: pip install pyyaml", file=sys.stderr)
+                sys.exit(5)
+            print(yaml.safe_dump(data, sort_keys=False, allow_unicode=True))
+        else:  # csv
+            emit_csv(t.GetName(), data["branches"], args.rootfile)
+        f.Close(); return
+
+    # Text mode tree output
+    print(colorize(f"================== Tree: {t.GetName()} ==================", Ansi.BRIGHT_GREEN, use_color, bold=True))
+    if not branches:
+        print("  (no branches or no matches)"); f.Close(); return
+
+    show_fields  = args.what in ("fields","both")
+    show_methods = args.what in ("methods","both")
+
+    for br in branches:
+        print_branch(t, br,
+             show_fields=show_fields,
+             show_methods=show_methods,
+             use_color=use_color,
+             max_depth=args.max_depth,
+             original_names=False,
+             show_types=args.show_types)
+
+    f.Close()
+
+if __name__ == "__main__":
+    main()
+
