@@ -178,11 +178,11 @@ This tool allows you to use existing cmssw library ([GenXSecAnalyzer.cc](https:/
 
 
 ```
-cmsRun utils/genXsec_cfg inputFiles="/store/mc/Run3Winter22DRPremix/QCD_Pt_50to80_TuneCP5_13p6TeV_pythia8/AODSIM/122X_mcRun3_2021_realistic_v9-v2/60000/00013e73-2f84-4d54-a6f5-cfdfafb08614.root" maxEvents=-1
+cmsRun ./utils/genXsec_cfg inputFiles="/store/mc/Run3Winter22DRPremix/QCD_Pt_50to80_TuneCP5_13p6TeV_pythia8/AODSIM/122X_mcRun3_2021_realistic_v9-v2/60000/00013e73-2f84-4d54-a6f5-cfdfafb08614.root" maxEvents=-1
 ```
 
 ```
-cmsRun utils/genXsec_cfg dataset="/QCD_Pt_2400to3200_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM" maxEvents=-1
+cmsRun ./utils/genXsec_cfg dataset="/QCD_Pt_2400to3200_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM" maxEvents=-1
 ```
 
 
@@ -203,6 +203,13 @@ cmsRun utils/genXsec_cfg dataset="/QCD_Pt_2400to3200_TuneCP5_13p6TeV_pythia8/Run
 
 ```
 edmPluginDump | grep -i scouting
+```
+
+
+### 5) List all available edm tools in CMSSW
+
+```
+ls $CMSSW_RELEASE_BASE/bin/$SCRAM_ARCH/edm*
 ```
 
 
