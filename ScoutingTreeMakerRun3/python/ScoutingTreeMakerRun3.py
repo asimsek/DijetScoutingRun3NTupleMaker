@@ -4,6 +4,7 @@ import os, re
 # --- year/era for JECs
 era_     = '2025C'
 jecMode_ = 'txt' # 'es'| 'txt' | 'none' 
+doJetVetoMap = True
 
 process = cms.Process('jetToolbox')
 
@@ -27,8 +28,8 @@ process.load("FWCore.MessageService.MessageLogger_cfi")
 process.options = cms.untracked.PSet(
     wantSummary = cms.untracked.bool(True) ## --- Set False to suppress long output
 )
-process.MessageLogger.cerr.FwkSummary.reportEvery = 1000
-process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+process.MessageLogger.cerr.FwkSummary.reportEvery = 100000
+process.MessageLogger.cerr.FwkReport.reportEvery  = 100000
 
 #------Show JEC logs from the analyzer
 process.MessageLogger.cerr.threshold = 'INFO'  # allow LogInfo/LogVerbatim
@@ -36,7 +37,7 @@ process.MessageLogger.cerr.default = cms.untracked.PSet(limit=cms.untracked.int3
 process.MessageLogger.cerr.JEC = cms.untracked.PSet(limit = cms.untracked.int32(1000000000))
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(5000)
+    input = cms.untracked.int32(-1)
 )
 
 
@@ -68,7 +69,17 @@ base_txt = [p for p in base_txt if p]  # drop empties
 #------ Residual run map (list of (min,max,file))
 residual_map = list(era_block.get('L2L3Residual', []))
 unc_file = era_block.get('Unc','')
+
 #--------------------------------------------------------------------------
+
+#------ Jet veto map files (may be a single string or a list of run-ranged entries)
+vetomap_entries = era_block.get('JetVetoMap', [])
+if isinstance(vetomap_entries, str):
+    vetomap_entries = [vetomap_entries]
+vetomap_files = list(vetomap_entries)
+vetomap_files = [str(x).strip() for x in vetomap_files if str(x).strip()]
+#--------------------------------------------------------------------------
+
 
 process.TFileService = cms.Service("TFileService",
                                  fileName=cms.string('test_scouting.root'),
@@ -83,7 +94,7 @@ process.TFileService = cms.Service("TFileService",
 L1Info = ['L1_HTT120er', 'L1_HTT160er', 'L1_HTT200er', 'L1_HTT255er', 'L1_HTT280er', 'L1_HTT320er', 'L1_HTT400er', 'L1_HTT450er', 'L1_ZeroBias']
 
 # https://cmshltinfo.app.cern.ch/summary?search=DST_&year=2024&paths=true&prescaled=false&stream-types=Scouting
-HLT_Info = cms.vstring("DST_PFScouting_JetHT_v", "DST_PFScouting_SingleMuon_v", 
+HLT_Info = cms.vstring("DST_PFScouting_JetHT_v", "DST_PFScouting_SingleMuon_v", "HLT_Mu50_v", "HLT_Mu55_v", "HLT_IsoMu24_v", "HLT_IsoMu20_v", "HLT_IsoMu27_v",
     "HLT_PFHT180_v", "HLT_PFHT180_v", "HLT_PFHT350_v", "HLT_PFHT370_v", "HLT_PFHT430_v", "HLT_PFHT510_v", "HLT_PFHT590_v",
     "HLT_PFJet40_v", "HLT_PFJet60_v", "HLT_PFJet80_v", "HLT_PFJet140_v", "HLT_PFJet200_v", "HLT_PFJet260_v", "HLT_PFJet320_v", "HLT_PFJet400_v", "HLT_PFJet450_v", "HLT_PFJet500_v", "HLT_PFJet550_v", 
     "DST_PFScouting_ZeroBias_v", "DST_PFScouting_AXOTight_v", "DST_PFScouting_AXOVLoose_v", "DST_PFScouting_AXOLoose_v", "DST_PFScouting_AXOVTight_v", "DST_PFScouting_SinglePhotonEB_v", "DST_PFScouting_CICADAVLoose_v", "DST_PFScouting_CICADALoose_v", "DST_PFScouting_CICADAMedium_v", "DST_PFScouting_CICADATight_v", "DST_PFScouting_CICADAVTight_v")
@@ -95,16 +106,20 @@ process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
                             isData                   =  cms.bool(True),
                             ptMinPF                  =  cms.double(15),
 
+                            # --- Jet veto maps ---
+                            applyJetVetoMap          =  cms.bool(doJetVetoMap),
+                            jetVetoMapFiles          =  cms.vstring(vetomap_files),
+
                             # --- JEC options ---
                             applyJEC                 =  cms.bool(True),
                             jecMode                  =  cms.string(jecMode_),
                             jecPayload               =  cms.string("AK4PFHLT"),  # e.g. 'AK4PFHLT' or 'AK4PFPuppiHLT'
                             jecLevels                =  cms.vstring("L1FastJet","L2Relative","L3Absolute","L2L3Residual"),
 
-                            # TXT base files (L1/L2/L3) from file only if txt mode; otherwise empty
+                            # --- TXT base files (L1/L2/L3) from file only if txt mode; otherwise empty
                             jecTxtFiles              =  cms.vstring(base_txt),
 
-                            # TXT per-run residual mapping (enabled only in txt mode)
+                            # --- TXT per-run residual mapping (enabled only in txt mode)
                             jecResidualByRun         =  cms.bool(len(residual_map)>0),
                             jecResidualMap           =  cms.vstring(residual_map),
                             applyJECUncertainty      =  cms.bool(True),
@@ -114,7 +129,7 @@ process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
                             printJECInfo             =  cms.bool(True),    # set True to print
                             printJECFirstNJets       =  cms.uint32(6),     # print at most this many jets (total)
 
-                            #------ JETS/MET
+                            # --- JETS/MET
                             pfcands                  =  cms.InputTag("hltScoutingPFPacker"                             ),
                             rho                      =  cms.InputTag("hltScoutingPFPacker"             ,"rho"          ),
                             pfMet                    =  cms.InputTag("hltScoutingPFPacker"             ,"pfMetPt"      ),
@@ -128,13 +143,13 @@ process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
                             muonsNoVtx               =  cms.InputTag("hltScoutingMuonPackerNoVtx"                      ),
                             displacedVertices        =  cms.InputTag("hltScoutingMuonPackerNoVtx"      ,"displacedVtx" ),
 
-                            #------ MC
+                            # --- MC
                             pu                       =  cms.untracked.InputTag('slimmedAddPileupInfo' ),
                             ptHat                    =  cms.untracked.InputTag('generator'            ),
                             genParticles             =  cms.InputTag('prunedGenParticlesDijet'        ),
                             genJetsAK4               =  cms.InputTag('slimmedGenJets'                 ),
 
-                            #------ Trigger
+                            # --- Trigger
                             doL1                     =  cms.bool(False),
                             doTriggerObjects         =  cms.bool(True),
                             ReadPrescalesFromFile    =  cms.bool(False),

@@ -11,6 +11,9 @@
 #include <TTree.h>
 #include <algorithm>
 #include <TLorentzVector.h>
+#include <TFile.h>
+#include <TH2.h>
+#include <TKey.h>
 //#include <memory>
 //#include <iostream>
 //#include <sstream>
@@ -19,10 +22,11 @@
 //#include <iomanip>
 //#include <functional>
 //#include <cassert>
-//#include "TFile.h"
 //#include "TH1D.h"
 //#include "TH1F.h"
 //#include "TMath.h"
+
+
 
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -172,18 +176,29 @@ class ScoutingTreeMakerRun3 : public edm::one::EDAnalyzer<>
     std::vector<std::string> *triggerName_;
 
     //---- jet and genJet variables --------------
-    std::vector<float> *ptAK4_, *etaAK4_, *phiAK4_, *massAK4_, *energyAK4_, *areaAK4_, *chfAK4_, *nhfAK4_, *phfAK4_, *elfAK4_, *mufAK4_;
+    std::vector<float> *ptAK4_, *rawPtAK4_, *etaAK4_, *phiAK4_, *massAK4_, *energyAK4_, *areaAK4_, *chfAK4_, *nhfAK4_, *phfAK4_, *elfAK4_, *mufAK4_;
     std::vector<int> *idLAK4_, *idTAK4_, *chHadMultAK4_, *neHadMultAK4_, *phoMultAK4_;
     std::vector<int> *elMultAK4_, *muMultAK4_, *hfHadMultAK4_, *hfEmMultAK4_;
     std::vector<float> *hf_hfAK4_, *hf_emfAK4_, *hofAK4_;
-    std::vector<float> *jecFactorAK4_;   // correction factor applied to each jet p4
-    std::vector<float> *chEmEAK4_, *neEmEAK4_;     // EM energies from PF candidates
-    std::vector<float> *chEmFAK4_, *neEmFAK4_;     // EM energy fractions
+    std::vector<float> *jecFactorAK4_;           // correction factor applied to each jet p4
+    std::vector<float> *chEmEAK4_, *neEmEAK4_;   // EM energies from PF candidates
+    std::vector<float> *chEmFAK4_, *neEmFAK4_;   // EM energy fractions
+
+    // --- Jet veto map config/state ---
+    bool applyJetVetoMap_;                       // toggle from cfg
+    std::vector<std::string> jetVetoMapFiles_;   // "min:max:file" or plain file
+    std::string vetoMapCurrentKey_;              // cache key of currently loaded map (per run)
+    std::unique_ptr<TH2> jetVetoMap_;            // loaded TH2 map (if using ROOT)
+
+    // --- Jet veto outputs ---
+    std::vector<int> *jetVetoMapAK4_;            // 1 if jet(eta,phi) in vetoed region; else 0
+    int nJetInVetoMap_;                          // number of jets flagged in this event
+
 
     // --- JES uncertainty outputs ---
-    std::vector<float> *jecRelUncAK4_;      // relative JES uncertainty per jet
-    std::vector<float> *jecUpFactorAK4_;    // 1 + unc
-    std::vector<float> *jecDownFactorAK4_;  // 1 - unc
+    std::vector<float> *jecRelUncAK4_;           // relative JES uncertainty per jet
+    std::vector<float> *jecUpFactorAK4_;         // 1 + unc
+    std::vector<float> *jecDownFactorAK4_;       // 1 - unc
     bool jecLoggedOnce_;
 
 };

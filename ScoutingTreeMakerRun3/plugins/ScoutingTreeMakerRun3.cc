@@ -8,6 +8,7 @@
 
 #include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/ScoutingTreeMakerRun3.h"
 #include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/JECUtils.h"
+#include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/JetVetoUtils.h"
 
 
 ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
@@ -45,6 +46,14 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   applyJECUncertainty_ =   iConfig.getParameter<bool>("applyJECUncertainty");
   jecUncTxtFile_       =   iConfig.getParameter<std::string>("jecUncTxtFile");
 
+  //------- Jet Veto Map config -------
+  applyJetVetoMap_   = iConfig.getParameter<bool>("applyJetVetoMap");
+  jetVetoMapFiles_   = iConfig.getParameter<std::vector<std::string>>("jetVetoMapFiles");
+  vetoMapCurrentKey_.clear();
+
+  //------- Jet veto outputs
+  jetVetoMapAK4_     = new std::vector<int>();
+
   //------- JEC:: Printing controls
   printJECInfo_        =   iConfig.getParameter<bool>("printJECInfo");
   printJECFirstNJets_  =   iConfig.getParameter<unsigned>("printJECFirstNJets");
@@ -80,6 +89,7 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   triggerResult_    = new vector<bool>();
   triggerName_      = new vector<string>();
 
+  rawPtAK4_         = new vector<float>();
   ptAK4_            = new vector<float>();    etaAK4_        =  new vector<float>();
   phiAK4_           = new vector<float>();    massAK4_       =  new vector<float>();
   energyAK4_        = new vector<float>();    areaAK4_       =  new vector<float>();
@@ -132,6 +142,7 @@ void ScoutingTreeMakerRun3::beginJob()
   outTree_->Branch("dEtajjAK4"             ,&dEtajjAK4_          ,"dEtajjAK4_/F"          );
   outTree_->Branch("dPhijjAK4"             ,&dPhijjAK4_          ,"dPhijjAK4_/F"          );
   outTree_->Branch("jetPtAK4"              ,"vector<float>"      ,&ptAK4_                 );
+  outTree_->Branch("jetRawPtAK4"           ,"vector<float>"      ,&rawPtAK4_              );
   outTree_->Branch("jetEtaAK4"             ,"vector<float>"      ,&etaAK4_                );
   outTree_->Branch("jetPhiAK4"             ,"vector<float>"      ,&phiAK4_                );
   outTree_->Branch("jetMassAK4"            ,"vector<float>"      ,&massAK4_               );
@@ -158,6 +169,10 @@ void ScoutingTreeMakerRun3::beginJob()
   outTree_->Branch("jetJECUncRelAK4"       ,"vector<float>"      ,&jecRelUncAK4_          );
   outTree_->Branch("jetJECUpFactorAK4"     ,"vector<float>"      ,&jecUpFactorAK4_        );
   outTree_->Branch("jetJECDownFactorAK4"   ,"vector<float>"      ,&jecDownFactorAK4_      );
+  //------- Jet veto map products (no event filtering is applied)
+  outTree_->Branch("jetVetoMapAK4"         ,"vector<int>"        ,&jetVetoMapAK4_         );
+  outTree_->Branch("nJetInVetoMap"         ,&nJetInVetoMap_      ,"nJetInVetoMap_/I"      );
+
 
   //------- Calculated Charged and Neutral EM Energies and Fractions
   outTree_->Branch("jetChEmEAK4"           ,"vector<float>"      ,&chEmEAK4_              );
@@ -249,7 +264,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
   massAK4_        ->reserve(nj);   energyAK4_     ->reserve(nj);    areaAK4_   ->reserve(nj);
   chfAK4_         ->reserve(nj);   nhfAK4_        ->reserve(nj);    phfAK4_    ->reserve(nj);
   elfAK4_         ->reserve(nj);   mufAK4_        ->reserve(nj);    hf_hfAK4_  ->reserve(nj);
-  hf_emfAK4_      ->reserve(nj);   hofAK4_        ->reserve(nj);
+  hf_emfAK4_      ->reserve(nj);   hofAK4_        ->reserve(nj);    rawPtAK4_  ->reserve(nj);
   chEmEAK4_       ->reserve(nj);   neEmEAK4_      ->reserve(nj);
   chEmFAK4_       ->reserve(nj);   neEmFAK4_      ->reserve(nj);
   idLAK4_         ->reserve(nj);   idTAK4_        ->reserve(nj);
@@ -257,6 +272,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
   phoMultAK4_     ->reserve(nj);   elMultAK4_     ->reserve(nj);
   muMultAK4_      ->reserve(nj);   hfHadMultAK4_  ->reserve(nj);
   hfEmMultAK4_    ->reserve(nj);
+  jetVetoMapAK4_  ->reserve(nj);
 
   //-------------- Event Info -----------------------------------
   rho_      =   rhoHandle.isValid()     ?  static_cast<float>(*rhoHandle)    : -999.f;
@@ -266,6 +282,15 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
   run_      =   iEvent.id().run();
   evt_      =   iEvent.id().event();
   lumi_     =   iEvent.id().luminosityBlock();
+
+  //------- JetVeto: load/cycle map per run (no-op if disabled or no files)
+  jetveto::ensureVetoMapReady(
+      applyJetVetoMap_,
+      jetVetoMapFiles_,
+      run_,
+      vetoMapCurrentKey_,
+      jetVetoMap_  // unique_ptr<TH2>&
+  );
 
   //------- SumET from PF-candidate pt (scouting has no stored sumEt)
   //------- MET Significance = MET / std::sqrt(SumET)
@@ -323,6 +348,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
             });
 
   nPFJets_ = 0;
+  int vetoCount = 0;
   float htAK4 = 0.0;
   TLorentzVector vP4AK4;
   for (unsigned idx : sortedPFJetIdx) { 
@@ -413,16 +439,20 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     int muMult        =   ijet.muonMultiplicity();
     int hfHadMult     =   ijet.HFHadronMultiplicity();
     int hfEmMult      =   ijet.HFEMMultiplicity();
-    
 
     //------- https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID
-    int idL = (chEF<0.99 && nhEF<0.99 && npr>1 && muEF<0.99);
-    int idT = (chEF<0.99 && nhEF<0.90 && npr>1 && muEF<0.99);
+    int idL = (chEF>0.01 && chHadMult>1 && nhEF<0.99 && npr>1 && muEF<0.80 && (neEmF+chEmF) < 0.90);
+    int idT = (chEF>0.01 && chHadMult>1 && nhEF<0.90 && npr>1 && muEF<0.80 && neEmF < 0.90 && chEmF < 0.80);
+
+    //--- flag eta–phi in veto map (1=vetoed, 0=ok). No filtering here; only store flags.
+    int inVeto = jetveto::flagFromMap(jetVetoMap_.get(), eta, phi);
 
     if (pt_corr > ptMinPF_) {
       htAK4 += pt_corr;
+      if (inVeto) ++vetoCount;
 
       ptAK4_                 ->push_back(pt_corr);
+      rawPtAK4_              ->push_back(pt_raw);
       phiAK4_                ->push_back(phi);
       etaAK4_                ->push_back(eta);
       massAK4_               ->push_back(mass_corr);
@@ -453,11 +483,13 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
       muMultAK4_             ->push_back(muMult);
       hfHadMultAK4_          ->push_back(hfHadMult);
       hfEmMultAK4_           ->push_back(hfEmMult);
+      jetVetoMapAK4_         ->push_back(inVeto);
 
     }
 
   } //------- Jet loop
 
+  nJetInVetoMap_     =  vetoCount;
   nPFJets_           =  static_cast<int>(ptAK4_->size());
   htAK4_             =  htAK4;
   unclusteredEnFrac_ =  (sumEt_>0.f)  ?  ((sumEt_ - htAK4_) / sumEt_) : -1.0f;
@@ -534,7 +566,9 @@ void ScoutingTreeMakerRun3::initialize()
   metOverSumEt_       = -999.f;
   minDPhiMetJet2_     = -999.f;
   minDPhiMetJet4_     = -999.f;
+  nJetInVetoMap_      = -999;
   ptAK4_              ->clear();
+  rawPtAK4_           ->clear();
   etaAK4_             ->clear();
   phiAK4_             ->clear();
   massAK4_            ->clear();
@@ -567,6 +601,7 @@ void ScoutingTreeMakerRun3::initialize()
   jecRelUncAK4_       ->clear();
   jecUpFactorAK4_     ->clear();
   jecDownFactorAK4_   ->clear();
+  jetVetoMapAK4_      ->clear();
   
 }
 
@@ -576,6 +611,7 @@ void ScoutingTreeMakerRun3::endJob()
   delete triggerResult_;
   delete triggerName_;
   delete ptAK4_;
+  delete rawPtAK4_;
   delete etaAK4_;
   delete phiAK4_;
   delete massAK4_;
@@ -606,6 +642,7 @@ void ScoutingTreeMakerRun3::endJob()
   delete jecRelUncAK4_;
   delete jecUpFactorAK4_;
   delete jecDownFactorAK4_;
+  delete jetVetoMapAK4_;
 
 }
 
