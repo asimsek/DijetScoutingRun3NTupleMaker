@@ -29,7 +29,7 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
-//#include "DataFormats/Math/interface/deltaR.h"
+#include "DataFormats/Math/interface/deltaR.h"
 //#include "DataFormats/JetReco/interface/JetCollection.h"
 //#include "DataFormats/METReco/interface/MET.h"
 //#include "DataFormats/VertexReco/interface/Vertex.h"
@@ -177,6 +177,8 @@ class ScoutingTreeMakerRun3 : public edm::one::EDAnalyzer<>
     std::vector<int> *elMultAK4_, *muMultAK4_, *hfHadMultAK4_, *hfEmMultAK4_;
     std::vector<float> *hf_hfAK4_, *hf_emfAK4_, *hofAK4_;
     std::vector<float> *jecFactorAK4_;   // correction factor applied to each jet p4
+    std::vector<float> *chEmEAK4_, *neEmEAK4_;     // EM energies from PF candidates
+    std::vector<float> *chEmFAK4_, *neEmFAK4_;     // EM energy fractions
 
     // --- JES uncertainty outputs ---
     std::vector<float> *jecRelUncAK4_;      // relative JES uncertainty per jet
@@ -189,4 +191,5 @@ class ScoutingTreeMakerRun3 : public edm::one::EDAnalyzer<>
 
 
 #endif
+
 

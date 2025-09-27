@@ -28,68 +28,72 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   isData_                   = iConfig.getParameter<bool>("isData");
 
 
-  //------- JEC config -------
+  //------- JEC:: JEC config -------
   applyJEC_            =   iConfig.getParameter<bool>("applyJEC");
   jecMode_             =   iConfig.getParameter<std::string>("jecMode");
   jecPayload_          =   iConfig.getParameter<std::string>("jecPayload");
   jecLevels_           =   iConfig.getParameter<std::vector<std::string>>("jecLevels");
   jecTxtFiles_         =   iConfig.getParameter<std::vector<std::string>>("jecTxtFiles");
 
-  // TXT-mode: per-run residual override
+  //------- JEC:: TXT-mode: per-run residual override
   jecResidualByRun_    =   iConfig.getParameter<bool>("jecResidualByRun");
   jecResidualMap_      =   iConfig.getParameter<std::vector<std::string>>("jecResidualMap");
   jecResidualCurrent_.clear();
 
 
-  //------- JEC Uncertainty config -------
+  //------- JEC:: JEC Uncertainty config -------
   applyJECUncertainty_ =   iConfig.getParameter<bool>("applyJECUncertainty");
   jecUncTxtFile_       =   iConfig.getParameter<std::string>("jecUncTxtFile");
 
-  //------- Printing controls
+  //------- JEC:: Printing controls
   printJECInfo_        =   iConfig.getParameter<bool>("printJECInfo");
   printJECFirstNJets_  =   iConfig.getParameter<unsigned>("printJECFirstNJets");
 
-  //------- Build TXT corrector (file mode, no per-run residual)
+  //------- JEC:: Build TXT corrector (file mode, no per-run residual)
   if (applyJEC_ && jecMode_ == "txt" && !jecResidualByRun_) {
     jecCorrector_ = jec::buildTxtCorrector(jecTxtFiles_, /*residual*/"");
   }
 
-  //------- TXT-mode uncertainty (independent of per-run residual)
+  //------- JEC:: TXT-mode uncertainty (independent of per-run residual)
   if (applyJECUncertainty_ && jecMode_ == "txt") {
     jecUnc_ = jec::buildUncertaintyFromTxt(jecUncTxtFile_);
   }
 
-
-  //------- Prepare ES token
+  //------- JEC:: Prepare ES token
   if (applyJEC_ && jecMode_ == "es") {
     jecESGetToken_ = esConsumes<JetCorrectorParametersCollection, JetCorrectionsRecord>(edm::ESInputTag("", jecPayload_));
   }
 
   
   //------- Allocate the JEC factor vector
-  jecFactorAK4_ = new std::vector<float>();
-  jecRelUncAK4_     = new std::vector<float>();
-  jecUpFactorAK4_   = new std::vector<float>();
-  jecDownFactorAK4_ = new std::vector<float>();
+  jecFactorAK4_     = new vector<float>();
+  jecRelUncAK4_     = new vector<float>();
+  jecUpFactorAK4_   = new vector<float>();
+  jecDownFactorAK4_ = new vector<float>();
+
+  chEmEAK4_         = new vector<float>();
+  neEmEAK4_         = new vector<float>();
+  chEmFAK4_         = new vector<float>();
+  neEmFAK4_         = new vector<float>();
 
   //------- Allocate pointer members before use
-  triggerResult_  = new vector<bool>();
-  triggerName_    = new vector<string>();
+  triggerResult_    = new vector<bool>();
+  triggerName_      = new vector<string>();
 
-  ptAK4_          = new vector<float>();    etaAK4_        =  new vector<float>();
-  phiAK4_         = new vector<float>();    massAK4_       =  new vector<float>();
-  energyAK4_      = new vector<float>();    areaAK4_       =  new vector<float>();
-  chfAK4_         = new vector<float>();    nhfAK4_        =  new vector<float>();
-  phfAK4_         = new vector<float>();    elfAK4_        =  new vector<float>();
-  mufAK4_         = new vector<float>();    hf_hfAK4_      =  new vector<float>();
-  hf_emfAK4_      = new vector<float>();    hofAK4_        =  new vector<float>();
+  ptAK4_            = new vector<float>();    etaAK4_        =  new vector<float>();
+  phiAK4_           = new vector<float>();    massAK4_       =  new vector<float>();
+  energyAK4_        = new vector<float>();    areaAK4_       =  new vector<float>();
+  chfAK4_           = new vector<float>();    nhfAK4_        =  new vector<float>();
+  phfAK4_           = new vector<float>();    elfAK4_        =  new vector<float>();
+  mufAK4_           = new vector<float>();    hf_hfAK4_      =  new vector<float>();
+  hf_emfAK4_        = new vector<float>();    hofAK4_        =  new vector<float>();
 
-  idLAK4_         = new vector<int>();      idTAK4_        =  new vector<int>();
-  chHadMultAK4_   = new vector<int>();      neHadMultAK4_  =  new vector<int>();
-  phoMultAK4_     = new vector<int>();      elMultAK4_     =  new vector<int>();
-  muMultAK4_      = new vector<int>();      hfHadMultAK4_  =  new vector<int>();
-  hfEmMultAK4_    = new vector<int>();
-  jecLoggedOnce_  = false;
+  idLAK4_           = new vector<int>();      idTAK4_        =  new vector<int>();
+  chHadMultAK4_     = new vector<int>();      neHadMultAK4_  =  new vector<int>();
+  phoMultAK4_       = new vector<int>();      elMultAK4_     =  new vector<int>();
+  muMultAK4_        = new vector<int>();      hfHadMultAK4_  =  new vector<int>();
+  hfEmMultAK4_      = new vector<int>();
+  jecLoggedOnce_    = false;
 
 } //------- Parameter Set End
 
@@ -155,11 +159,18 @@ void ScoutingTreeMakerRun3::beginJob()
   outTree_->Branch("jetJECUpFactorAK4"     ,"vector<float>"      ,&jecUpFactorAK4_        );
   outTree_->Branch("jetJECDownFactorAK4"   ,"vector<float>"      ,&jecDownFactorAK4_      );
 
+  //------- Calculated Charged and Neutral EM Energies and Fractions
+  outTree_->Branch("jetChEmEAK4"           ,"vector<float>"      ,&chEmEAK4_              );
+  outTree_->Branch("jetNeEmEAK4"           ,"vector<float>"      ,&neEmEAK4_              );
+  outTree_->Branch("jetChEmFAK4"           ,"vector<float>"      ,&chEmFAK4_              );
+  outTree_->Branch("jetNeEmFAK4"           ,"vector<float>"      ,&neEmFAK4_              );
+
   //------- Trigger
   outTree_->Branch("triggerResult"         ,"vector<bool>"       ,&triggerResult_         );
   outTree_->Branch("triggerName"           ,"vector<string>"     ,&triggerName_           );
 
 } //------- beginJob End
+
 
 
 void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetup)
@@ -182,7 +193,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
   Handle<vector<Run3ScoutingVertex>> recVtxs;
   iEvent.getByToken(srcVrtx_, recVtxs);
 
-  //------- TXT-mode: (re)build corrector with per-run Residual override
+  //------- JEC:: TXT-mode: (re)build corrector with per-run Residual override
   if (applyJEC_ && jecMode_ == "txt" && jecResidualByRun_) {
     std::string residualKey;
     const bool haveResidual = jec::pickResidualForRun(jecResidualMap_, iEvent.id().run(), residualKey);
@@ -208,7 +219,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     }
   }
   
-  //------- Build the ES-corrector (jecMode_ == "es")
+  //------- JEC:: Build the ES-corrector (jecMode_ == "es")
   if (applyJEC_ && jecMode_ == "es" && !jecCorrector_) {
     const auto& coll = iSetup.getData(jecESGetToken_);
     jecCorrector_ = jec::buildEsCorrector(coll, jecLevels_);
@@ -220,7 +231,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
                         << " with levels: " << jec::joinLevels(jecLevels_);
   }
 
-  //------- Build JES uncertainty from ES (if available)
+  //------- JEC:: Build JES uncertainty from ES (if available)
   if (applyJECUncertainty_ && jecMode_ == "es" && !jecUnc_) {
     const auto& coll = iSetup.getData(jecESGetToken_);
     jecUnc_ = jec::buildUncertaintyFromEs(coll);
@@ -239,6 +250,8 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
   chfAK4_         ->reserve(nj);   nhfAK4_        ->reserve(nj);    phfAK4_    ->reserve(nj);
   elfAK4_         ->reserve(nj);   mufAK4_        ->reserve(nj);    hf_hfAK4_  ->reserve(nj);
   hf_emfAK4_      ->reserve(nj);   hofAK4_        ->reserve(nj);
+  chEmEAK4_       ->reserve(nj);   neEmEAK4_      ->reserve(nj);
+  chEmFAK4_       ->reserve(nj);   neEmFAK4_      ->reserve(nj);
   idLAK4_         ->reserve(nj);   idTAK4_        ->reserve(nj);
   chHadMultAK4_   ->reserve(nj);   neHadMultAK4_  ->reserve(nj);
   phoMultAK4_     ->reserve(nj);   elMultAK4_     ->reserve(nj);
@@ -371,30 +384,40 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     }
 
     //----- JETID
-    double chE_frac     =   ijet.chargedHadronEnergy() / jet_energy_raw;
-    double nhE_frac     =   ijet.neutralHadronEnergy() / jet_energy_raw;
-    double phoE_frac    =   ijet.photonEnergy()        / jet_energy_raw;
-    double elE_frac     =   ijet.electronEnergy()      / jet_energy_raw;
-    double muE_frac     =   ijet.muonEnergy()          / jet_energy_raw;
 
-    double hfHadE_frac  =   ijet.HFHadronEnergy()      / jet_energy_raw;
-    double hfEmE_frac   =   ijet.HFEMEnergy()          / jet_energy_raw;
-    double hoE_frac     =   ijet.HOEnergy()            / jet_energy_raw;
+    //----- EM energies from jet components 
+    //----- Source for method: https://github.com/cms-sw/cmssw/blob/master/RecoJets/JetProducers/src/JetSpecific.cc#L277
+    //----- chargedEmEnergy := electronEnergy (abs(pdgId)==11)
+    //----- neutralEmEnergy := photonEnergy (pdgId==22) + eGamma (hfEmEnergy) (pdgId==2)
+    double chEmE      =   ijet.electronEnergy();
+    double neEmE      =   ijet.photonEnergy() + ijet.HFEMEnergy();
 
+    //----- Fractions
+    double chEF       =   ijet.chargedHadronEnergy() / jet_energy_raw;
+    double nhEF       =   ijet.neutralHadronEnergy() / jet_energy_raw;
+    double phoEF      =   ijet.photonEnergy()        / jet_energy_raw;
+    double elEF       =   ijet.electronEnergy()      / jet_energy_raw;
+    double muEF       =   ijet.muonEnergy()          / jet_energy_raw;
+    double hfHadEF    =   ijet.HFHadronEnergy()      / jet_energy_raw;
+    double hfEmEF     =   ijet.HFEMEnergy()          / jet_energy_raw;
+    double hoEF       =   ijet.HOEnergy()            / jet_energy_raw;  
+    double chEmF      =   chEmE                      / jet_energy_raw;
+    double neEmF      =   neEmE                      / jet_energy_raw;
 
-    int chHadMult       =   ijet.chargedHadronMultiplicity();
-    int neHadMult       =   ijet.neutralHadronMultiplicity();
-    int npr             =   chHadMult + neHadMult;
-    int phoMult         =   ijet.photonMultiplicity();
-    int elMult          =   ijet.electronMultiplicity();
-    int muMult          =   ijet.muonMultiplicity();
-    int hfHadMult       =   ijet.HFHadronMultiplicity();
-    int hfEmMult        =   ijet.HFEMMultiplicity();
+    //----- Multiplicity
+    int chHadMult     =   ijet.chargedHadronMultiplicity();
+    int neHadMult     =   ijet.neutralHadronMultiplicity();
+    int npr           =   chHadMult + neHadMult;
+    int phoMult       =   ijet.photonMultiplicity();
+    int elMult        =   ijet.electronMultiplicity();
+    int muMult        =   ijet.muonMultiplicity();
+    int hfHadMult     =   ijet.HFHadronMultiplicity();
+    int hfEmMult      =   ijet.HFEMMultiplicity();
     
 
     //------- https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID
-    int idL = (chE_frac<0.99 && nhE_frac<0.99 && npr>1 && muE_frac<0.99);
-    int idT = (chE_frac<0.99 && nhE_frac<0.90 && npr>1 && muE_frac<0.99);
+    int idL = (chEF<0.99 && nhEF<0.99 && npr>1 && muEF<0.99);
+    int idT = (chEF<0.99 && nhEF<0.90 && npr>1 && muEF<0.99);
 
     if (pt_corr > ptMinPF_) {
       htAK4 += pt_corr;
@@ -404,23 +427,27 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
       etaAK4_                ->push_back(eta);
       massAK4_               ->push_back(mass_corr);
       energyAK4_             ->push_back(jet_energy);
-      jecFactorAK4_          ->push_back(static_cast<float>(jec));
+      jecFactorAK4_          ->push_back(jec);
       jecRelUncAK4_          ->push_back(jes_unc_rel);
       jecUpFactorAK4_        ->push_back(1.f + jes_unc_rel);
       jecDownFactorAK4_      ->push_back(std::max(0.f, 1.f - jes_unc_rel));
       idLAK4_                ->push_back(idL);
       idTAK4_                ->push_back(idT);
-      chfAK4_                ->push_back(chE_frac);
-      nhfAK4_                ->push_back(nhE_frac);
-      phfAK4_                ->push_back(phoE_frac);
-      elfAK4_                ->push_back(elE_frac);
-      mufAK4_                ->push_back(muE_frac);
+      chfAK4_                ->push_back(chEF);
+      nhfAK4_                ->push_back(nhEF);
+      phfAK4_                ->push_back(phoEF);
+      elfAK4_                ->push_back(elEF);
+      mufAK4_                ->push_back(muEF);
       chHadMultAK4_          ->push_back(chHadMult);
       neHadMultAK4_          ->push_back(neHadMult);
       areaAK4_               ->push_back(ijet.jetArea());
-      hf_hfAK4_              ->push_back(hfHadE_frac);
-      hf_emfAK4_             ->push_back(hfEmE_frac);
-      hofAK4_                ->push_back(hoE_frac);
+      hf_hfAK4_              ->push_back(hfHadEF);
+      hf_emfAK4_             ->push_back(hfEmEF);
+      hofAK4_                ->push_back(hoEF);
+      chEmEAK4_              ->push_back(chEmE);
+      neEmEAK4_              ->push_back(neEmE);
+      chEmFAK4_              ->push_back(chEmF);
+      neEmFAK4_              ->push_back(neEmF);
       phoMultAK4_            ->push_back(phoMult);
       elMultAK4_             ->push_back(elMult);
       muMultAK4_             ->push_back(muMult);
@@ -433,7 +460,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
 
   nPFJets_           =  static_cast<int>(ptAK4_->size());
   htAK4_             =  htAK4;
-  unclusteredEnFrac_ =  (sumEt_>0.f)  ?  static_cast<float>((sumEt_ - htAK4_) / sumEt_) : -1.0f;
+  unclusteredEnFrac_ =  (sumEt_>0.f)  ?  ((sumEt_ - htAK4_) / sumEt_) : -1.0f;
 
   //------- Fake-MET detection:
   //------- Compute min DeltaPhi between MET and the leading (up to N=2 and N=4) jets.
@@ -521,6 +548,10 @@ void ScoutingTreeMakerRun3::initialize()
   hf_hfAK4_           ->clear();
   hf_emfAK4_          ->clear();
   hofAK4_             ->clear();
+  chEmEAK4_           ->clear();
+  neEmEAK4_           ->clear();
+  chEmFAK4_           ->clear();
+  neEmFAK4_           ->clear();
   idLAK4_             ->clear();
   idTAK4_             ->clear();
   chHadMultAK4_       ->clear();
@@ -558,6 +589,10 @@ void ScoutingTreeMakerRun3::endJob()
   delete hf_hfAK4_;
   delete hf_emfAK4_;
   delete hofAK4_;
+  delete chEmEAK4_;
+  delete neEmEAK4_;
+  delete chEmFAK4_;
+  delete neEmFAK4_;
   delete idLAK4_;
   delete idTAK4_;
   delete chHadMultAK4_;
@@ -580,4 +615,5 @@ ScoutingTreeMakerRun3::~ScoutingTreeMakerRun3()
 }
 
 DEFINE_FWK_MODULE(ScoutingTreeMakerRun3);
+
 

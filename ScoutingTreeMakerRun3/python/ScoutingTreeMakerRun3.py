@@ -36,7 +36,7 @@ process.MessageLogger.cerr.default = cms.untracked.PSet(limit=cms.untracked.int3
 process.MessageLogger.cerr.JEC = cms.untracked.PSet(limit = cms.untracked.int32(1000000000))
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(-1)
+    input = cms.untracked.int32(5000)
 )
 
 
@@ -66,7 +66,7 @@ base_txt = [era_block.get('L1FastJet',''),
 base_txt = [p for p in base_txt if p]  # drop empties
 
 #------ Residual run map (list of (min,max,file))
-residual_map = [ ':'.join(t) for t in era_block.get('L2L3Residual', []) ]
+residual_map = list(era_block.get('L2L3Residual', []))
 unc_file = era_block.get('Unc','')
 #--------------------------------------------------------------------------
 
