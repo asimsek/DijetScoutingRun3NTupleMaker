@@ -340,12 +340,36 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
   //if (recVtxs->size() > 0) {
 
   //------- Proper sorting according to the PFJet pT values.
-  vector<unsigned> sortedPFJetIdx(PFJets->size());
-  iota(sortedPFJetIdx.begin(), sortedPFJetIdx.end(), 0u);  // 0,1,2,...,N-1
-  sort(sortedPFJetIdx.begin(), sortedPFJetIdx.end(),
-            [&](unsigned a, unsigned b){
-              return PFJets->at(a).pt() > PFJets->at(b).pt();  // sort by pT (desc)
-            });
+  //------- Sort by *corrected* pT (so jet[0], jet[1] are leading/subleading after JEC)
+  std::vector<float> jecCache(PFJets->size(), 1.f);
+  std::vector<float> corrPt(PFJets->size(), 0.f);
+
+  for (size_t i = 0; i < PFJets->size(); ++i) {
+    const auto& j = PFJets->at(i);
+    TLorentzVector vRaw; vRaw.SetPtEtaPhiM(j.pt(), j.eta(), j.phi(), j.m());
+
+    float jec = 1.f;
+    if (applyJEC_ && jecCorrector_) {
+      jecCorrector_->setRho(std::max(0.f, rho_));
+      jecCorrector_->setJetA(j.jetArea());
+      jecCorrector_->setJetPt(j.pt());
+      jecCorrector_->setJetEta(j.eta());
+      jecCorrector_->setJetPhi(j.phi());
+      jecCorrector_->setJetE(vRaw.Energy());
+      if (nVtx_ >= 0) jecCorrector_->setNPV(nVtx_);
+      jec = jecCorrector_->getCorrection();
+    }
+
+    jecCache[i] = jec;           // <-- save it
+    corrPt[i]   = j.pt() * jec;  // <-- use it for sorting
+  }
+
+
+  std::vector<unsigned> sortedPFJetIdx(PFJets->size());
+  std::iota(sortedPFJetIdx.begin(), sortedPFJetIdx.end(), 0u);
+  std::sort(sortedPFJetIdx.begin(), sortedPFJetIdx.end(),
+            [&](unsigned a, unsigned b){ return corrPt[a] > corrPt[b]; });
+
 
   nPFJets_ = 0;
   int vetoCount = 0;
@@ -364,17 +388,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     const double jet_energy_raw = vP4Raw.Energy();
 
     //----- JEC factor
-    double jec = 1.0;
-    if (applyJEC_ && jecCorrector_) {
-      jecCorrector_->setRho(std::max(0.f, rho_));
-      jecCorrector_->setJetA(ijet.jetArea());
-      jecCorrector_->setJetPt(pt_raw);
-      jecCorrector_->setJetEta(eta);
-      jecCorrector_->setJetPhi(phi);
-      jecCorrector_->setJetE(vP4Raw.Energy());
-      if (nVtx_ >= 0) jecCorrector_->setNPV(nVtx_);
-      jec = jecCorrector_->getCorrection();
-    }
+    float jec = jecCache[idx];  // idx is the original PFJets index, e.g. sortedPFJetIdx[k]
 
     //----- Corrected 4-vector for kinematics
     const float pt_corr   =  pt_raw   * jec;
