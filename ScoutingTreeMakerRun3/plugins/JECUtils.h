@@ -4,6 +4,10 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <limits>
+#include <numeric>
+#include <algorithm>
+#include <cctype>
 
 #include "FWCore/ParameterSet/interface/FileInPath.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
@@ -23,9 +27,14 @@ namespace jec {
                     const std::string& residualTxtIfAny);
 
   /// Build an ES-based corrector from a payload collection and JEC level list.
+  /// ES-mode helper: build from ES; if "L2L3Residual" is requested but missing in ES,
+  /// optionally append it from a TXT file. Sets usedTxtResidual=true iff TXT residual is used.
   std::unique_ptr<FactorizedJetCorrector>
-  buildEsCorrector(const JetCorrectorParametersCollection& coll,
-                   const std::vector<std::string>& levels);
+  buildEsCorrectorWithOptionalTxtResidual(const JetCorrectorParametersCollection& coll,
+                                          const std::vector<std::string>& levels,
+                                          const std::string& residualTxtFile,
+                                          bool allowFallback,
+                                          bool& usedTxtResidual);
 
   /// Make a JetCorrectionUncertainty from ES (if present).
   std::unique_ptr<JetCorrectionUncertainty>

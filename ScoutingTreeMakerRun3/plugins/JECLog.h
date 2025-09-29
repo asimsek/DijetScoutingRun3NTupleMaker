@@ -25,7 +25,8 @@ struct EsConfig {
   std::string payload;
   std::vector<std::string> levels;
   bool hasUnc{false};
-  bool usedTxtFallback{false}; // ES mode: Unc came from TXT fallback
+  bool usedTxtUncFallback{false};     // ES mode: Unc came from TXT fallback
+  std::string residualSource{"n/a"};  // "es" | "txt" | "none" | "n/a"
 };
 
 
@@ -53,12 +54,14 @@ inline void print(const EsConfig& c){
       << "  Record     : JetCorrectionsRecord\n"
       << "  Payload    : " << c.payload << "\n"
       << "  Levels     : " << jec::joinLevels(c.levels) << "\n"
+      << "  Residuals  : " << c.residualSource << "\n"
       << "  Uncertainty: "
       << (c.hasUnc
-            ? (c.usedTxtFallback ? "Loaded from txt fallback!" : "present in ES")
+            ? (c.usedTxtUncFallback ? "Loaded from txt fallback!" : "present in ES")
             : "NOT found in ES")
       << "\n"
-      << "  Note       : ES mode reads from the GlobalTag payload (no local TXT files)\n"
+      << "  Note       : ES mode reads from the GlobalTag payload; if requested levels are\n"
+      << "               missing, optional TXT fallbacks may be used as configured.\n"
       << "##################################################";
   edm::LogVerbatim("JEC") << oss.str();
 }

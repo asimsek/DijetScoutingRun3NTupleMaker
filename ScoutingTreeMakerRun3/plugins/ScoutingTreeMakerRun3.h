@@ -133,6 +133,7 @@ class ScoutingTreeMakerRun3 : public edm::one::EDAnalyzer<>
     std::string jecUncTxtFile_;                             // used if jecMode_ == "txt"
     std::unique_ptr<JetCorrectionUncertainty> jecUnc_;      // built from ES or TXT
     bool jecUncFallbackToTxt_;                              // ES mode only: allow fallback to TXT for uncertainty
+    bool jecResidualFallbackToTxt_;                         // ES mode only: allow fallback to TXT for L2L3Residual
 
 
     // --- Debug/printing controls ---

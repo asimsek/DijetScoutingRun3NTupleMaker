@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+check_dataset_completeness.py
+
+Checks per-site completeness of CMS datasets using dasgoclient.
+- Site is 100% only if it hosts all blocks (and, with --check-files, all files).
+- Wildcards (*) in dataset args are expanded, listed in PT order, then checked.
+- --full_presence prints only 100% sites. Tapes excluded by default.
+"""
+import argparse, subprocess, sys, time, re
+from typing import List, Optional, Dict, Tuple
+
+DAS_BIN = "dasgoclient"
+SITE_DISK_RE = re.compile(r"(^T2_|^T3_|_Disk$)")
+PT_RE = re.compile(r"PT-(\d+|Inf)to(\d+|Inf)")
+
+def run_das(query: str, unique: bool = False, retries: int = 2) -> Optional[str]:
+    cmd = [DAS_BIN, "-query", query]
+    if unique:
+        cmd.append("-unique")
+    last = None
+    for k in range(retries + 1):
+        try:
+            out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
+            return out.strip()
+        except FileNotFoundError:
+            print(f"[FATAL] '{DAS_BIN}' not found in PATH.", file=sys.stderr); return None
+        except subprocess.CalledProcessError as e:
+            last = e.output.strip(); time.sleep(0.8 * (k + 1))
+    if last: print(f"[dasgoclient error] {last}", file=sys.stderr)
+    return None
+
+def list_blocks(dataset: str) -> List[str]:
+    out = run_das(f"block dataset={dataset} | grep block.name", unique=True)
+    if not out: return []
+    return [x.strip() for x in out.split() if x.strip()]
+
+def list_sites_for_block(block: str, include_tapes: bool) -> List[str]:
+    out = run_das(f"site block={block} | grep site.name", unique=True)
+    if not out: return []
+    sites = [s.strip() for s in out.split() if s.strip()]
+    if not include_tapes:
+        sites = [s for s in sites if not (s.endswith("_MSS") or s.endswith("_Tape"))]
+    return [s for s in sites if SITE_DISK_RE.search(s)]
+
+def list_disk_sites_for_dataset(dataset: str, include_tapes: bool) -> List[str]:
+    out = run_das(f"site dataset={dataset} | grep site.name", unique=True)
+    if not out: return []
+    sites = [s.strip() for s in out.split() if s.strip()]
+    if not include_tapes:
+        sites = [s for s in sites if not (s.endswith("_MSS") or s.endswith("_Tape"))]
+    return sorted({s for s in sites if SITE_DISK_RE.search(s)})
+
+def count_files(dataset: str, site: Optional[str] = None) -> int:
+    q = f"file dataset={dataset}"
+    if site: q += f" site={site}"
+    q += " | count(file.name)"
+    out = run_das(q)
+    try: return int(out.split()[-1]) if out else 0
+    except Exception: return 0
+
+def _pt_num(x: str) -> float:
+    return float('inf') if x == "Inf" else int(x)
+
+def _pt_key(ds: str) -> Tuple[float, float, str]:
+    m = PT_RE.search(ds)
+    if not m: return (float('inf'), float('inf'), ds)
+    lo, hi = _pt_num(m.group(1)), _pt_num(m.group(2))
+    return (lo, hi, ds)
+
+def expand_wildcard(pattern: str) -> List[str]:
+    out = run_das(f"dataset dataset={pattern} | grep dataset.name", unique=True)
+    if not out: return []
+    matches = [x.strip() for x in out.split() if x.strip()]
+    matches.sort(key=_pt_key)
+    return matches
+
+def check_dataset(dataset: str, full_presence: bool, check_files: bool, include_tapes: bool) -> int:
+    print("=" * 88)
+    print(f"Dataset: {dataset}")
+
+    blocks = list_blocks(dataset)
+    nb_total = len(blocks)
+    if nb_total == 0:
+        print("  ! No blocks found."); return 0
+    print(f"  Total blocks: {nb_total}")
+
+    sites = list_disk_sites_for_dataset(dataset, include_tapes)
+    if not sites:
+        print("  ! No DISK sites found."); return 0
+
+    blocks_at_site: Dict[str, int] = {s: 0 for s in sites}
+    for b in blocks:
+        holders = set(list_sites_for_block(b, include_tapes))
+        for s in sites:
+            if s in holders:
+                blocks_at_site[s] += 1
+
+    if check_files:
+        nf_total = count_files(dataset)
+        print(f"  Total files:  {nf_total}")
+
+    hits = 0
+    for s in sites:
+        sb = blocks_at_site.get(s, 0)
+        pctb = (100.0 * sb / nb_total) if nb_total else 0.0
+        line = f"{s:20s} : blocks {sb}/{nb_total} ({pctb:6.2f}%)"
+        if check_files:
+            sf = count_files(dataset, site=s)
+            complete = (sb == nb_total) and (sf == nf_total)
+            pctf = (100.0 * sf / nf_total) if nf_total else 0.0
+            line += f", files {sf}/{nf_total} ({pctf:6.2f}%)"
+        else:
+            complete = (sb == nb_total)
+
+        if full_presence:
+            if complete:
+                print(f"  ✅ {line}"); hits += 1
+        else:
+            print(f"  {'✅' if complete else '❌'} {line}")
+
+    if full_presence and hits == 0:
+        print("  (no DISK site with 100% completeness found)")
+    return hits
+
+def parse_args():
+    ap = argparse.ArgumentParser(description="Check per-site completeness of CMS datasets using dasgoclient.")
+    g = ap.add_mutually_exclusive_group(required=False)
+    g.add_argument("-i", "--input", help="Text file with one dataset per line (# comments allowed).")
+    ap.add_argument("datasets", nargs="*", help="Dataset(s) like /A/B/C; supports * wildcards.")
+    ap.add_argument("--full_presence", action="store_true", help="Only print sites that are 100% complete.")
+    ap.add_argument("--check-files", action="store_true", help="Also require all files to be present at the site.")
+    ap.add_argument("--include-tapes", action="store_true", help="Include *_MSS/_Tape endpoints.")
+    return ap.parse_args()
+
+def load_and_expand_datasets(args) -> List[str]:
+    raw = list(args.datasets) if args.datasets else []
+    if args.input:
+        try:
+            with open(args.input) as f:
+                for ln in f:
+                    ln = ln.strip()
+                    if not ln or ln.startswith("#"): continue
+                    raw.append(ln)
+        except OSError as e:
+            print(f"[FATAL] Could not read --input file: {e}", file=sys.stderr); sys.exit(2)
+    if not raw:
+        print("No datasets provided. Use positional args or --input FILE.", file=sys.stderr); sys.exit(2)
+
+    expanded: List[str] = []
+    for item in raw:
+        if "*" in item:
+            print("=" * 88); print(f"Wildcard pattern: {item}")
+            matches = expand_wildcard(item)
+            if not matches:
+                print("  ! No datasets matched.")
+            else:
+                print("  Matched datasets (PT order):")
+                for m in matches: print(f"   - {m}")
+                expanded.extend(matches)
+        else:
+            expanded.append(item)
+    return expanded
+
+def main():
+    args = parse_args()
+    datasets = load_and_expand_datasets(args)
+    any_hits = 0
+    for ds in datasets:
+        any_hits += check_dataset(ds, full_presence=args.full_presence, check_files=args.check_files, include_tapes=args.include_tapes)
+    if args.full_presence and any_hits == 0:
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+

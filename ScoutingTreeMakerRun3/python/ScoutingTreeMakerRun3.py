@@ -37,7 +37,7 @@ process.MessageLogger.cerr.default = cms.untracked.PSet(limit=cms.untracked.int3
 process.MessageLogger.cerr.JEC = cms.untracked.PSet(limit = cms.untracked.int32(1000000000))
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(-1)
+    input = cms.untracked.int32(5000)
 )
 
 
@@ -46,6 +46,7 @@ process.maxEvents = cms.untracked.PSet(
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
         'root://cms-xrd-global.cern.ch//store/data/Run2025C/ScoutingPFRun3/HLTSCOUT/v1/000/392/925/00000/b95d5cc9-62b2-4b3b-a0f9-d0d79b52a85d.root'
+        #'root://cms-xrd-global.cern.ch//store/mc/Run3Winter22DRPremix/QCD_Pt_50to80_TuneCP5_13p6TeV_pythia8/AODSIM/122X_mcRun3_2021_realistic_v9-v2/60000/0004f6b4-3485-42c0-9b21-a026af96a8ff.root'
     )
 )
 
@@ -113,8 +114,9 @@ process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
                             # --- JEC options ---
                             applyJEC                 =  cms.bool(True),
                             jecUncFallbackToTxt      =  cms.bool(True),          # ES-mode uncertainty fallback control
+                            jecResidualFallbackToTxt =  cms.bool(True),          # ES-mode residual (L2L3Residual) TXT fallback control
                             jecMode                  =  cms.string(jecMode_),
-                            jecPayload               =  cms.string("AK4PFHLT"),  # e.g. 'AK4PFHLT' or 'AK8PFHLT' `conddb list <YourGlobalTag> | grep JetCorrectionsRecord`
+                            jecPayload               =  cms.string("AK8PFHLT"),  # e.g. 'AK4PFHLT' or 'AK8PFHLT' `conddb list <YourGlobalTag> | grep JetCorrectionsRecord`
                             jecLevels                =  cms.vstring("L1FastJet","L2Relative","L3Absolute","L2L3Residual"),
 
                             # --- TXT base files (L1/L2/L3) from file only if txt mode; otherwise empty

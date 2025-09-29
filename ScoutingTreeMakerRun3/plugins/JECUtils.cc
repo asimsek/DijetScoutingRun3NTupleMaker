@@ -1,6 +1,5 @@
 #include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/JECUtils.h"
-#include <limits>
-#include <numeric>
+
 
 namespace jec {
 
@@ -61,7 +60,47 @@ namespace jec {
       return nullptr;
     }
     return std::make_unique<FactorizedJetCorrector>(pars);
-  }
+    }
+
+    std::unique_ptr<FactorizedJetCorrector>
+    buildEsCorrectorWithOptionalTxtResidual(const JetCorrectorParametersCollection& coll,
+                                            const std::vector<std::string>& levels,
+                                            const std::string& residualTxtFile,
+                                            bool allowFallback,
+                                            bool& usedTxtResidual)
+    {
+      usedTxtResidual = false;
+      std::vector<JetCorrectorParameters> pars;
+      pars.reserve(levels.size());
+
+      for (const auto& lvl : levels) {
+        if (lvl == "L2L3Residual") {
+          bool haveEsResidual = false;
+          try {
+            pars.push_back(coll["L2L3Residual"]);
+            haveEsResidual = true;
+          } catch (...) {
+            haveEsResidual = false;
+          }
+
+          if (!haveEsResidual && allowFallback && !residualTxtFile.empty()) {
+            try {
+              edm::FileInPath fp(residualTxtFile);
+              pars.emplace_back(fp.fullPath());
+              usedTxtResidual = true;
+            } catch (...) {
+              // If TXT loading fails, we proceed without Residuals.
+            }
+          }
+        } else {
+          // Other levels must exist in ES (keep previous behavior)
+          pars.push_back(coll[lvl]);  // throws if missing
+        }
+      }
+
+      if (pars.empty()) return nullptr;
+      return std::make_unique<FactorizedJetCorrector>(pars);
+    }
 
   std::unique_ptr<FactorizedJetCorrector>
   buildEsCorrector(const JetCorrectorParametersCollection& coll,

@@ -73,20 +73,23 @@ voms-proxy-init --voms cms --valid 192:00
 
 | <sup><sub>QCD Samples (Run3Winter22 MiniAOD)</sub></sup>| <sup><sub>cross section (xsec)</sub></sup>|
 |--|--|
-| <sup><sub>/QCD_Pt_50to80_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>16740000</sub></sup> |
-| <sup><sub>/QCD_Pt_80to120_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>2511000</sub></sup> |
-| <sup><sub>/QCD_Pt_120to170_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>442000</sub></sup> |
-| <sup><sub>/QCD_Pt_170to300_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>113700</sub></sup> |
-| <sup><sub>/QCD_Pt_300to470_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>7621</sub></sup> |
-| <sup><sub>/QCD_Pt_470to600_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>626</sub></sup> |
-| <sup><sub>/QCD_Pt_600to800_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>179.7</sub></sup> |
-| <sup><sub>/QCD_Pt_800to1000_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>30.7</sub></sup> |
-| <sup><sub>/QCD_Pt_1000to1400_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>8.946</sub></sup> |
-| <sup><sub>/QCD_Pt_1400to1800_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>0.8098</sub></sup> |
-| <sup><sub>/QCD_Pt_1800to2400_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>0.1152</sub></sup> |
-| <sup><sub>/QCD_Pt_2400to3200_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>0.007591</sub></sup> |
-| <sup><sub>/QCD_Pt_3200toInf_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM</sub></sup> | <sup><sub>0.0002303</sub></sup> |
+| <sup><sub>/QCD_PT-50to80_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>16760000</sub></sup> |
+| <sup><sub>/QCD_PT-80to120_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>2534000</sub></sup> |
+| <sup><sub>/QCD_PT-120to170_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>445800</sub></sup> |
+| <sup><sub>/QCD_PT-170to300_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>113700</sub></sup> |
+| <sup><sub>/QCD_PT-300to470_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>7559</sub></sup> |
+| <sup><sub>/QCD_PT-470to600_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>626.4</sub></sup> |
+| <sup><sub>/QCD_PT-600to800_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>178.6</sub></sup> |
+| <sup><sub>/QCD_PT-800to1000_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>30.57</sub></sup> |
+| <sup><sub>/QCD_PT-1000to1400_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>8.92</sub></sup> |
+| <sup><sub>/QCD_PT-1400to1800_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>0.8103</sub></sup> |
+| <sup><sub>/QCD_PT-1800to2400_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>0.1148</sub></sup> |
+| <sup><sub>/QCD_PT-2400to3200_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>0.007542</sub></sup> |
+| <sup><sub>/QCD_PT-3200_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>0.0002331</sub></sup> |
 
+
+> [!NOTE]
+> Scouting content (eg.: `Run3ScoutingPFJet_hltScoutingPFPacker`) is not available in the `MINIAODSIM` format.
 
 
 ### CMS DAS Queries
@@ -101,40 +104,30 @@ voms-proxy-init --voms cms --valid 192:00
 #### Run3 Scouting Datasets
 
 ```
-./utils/dasgoclient --query='dataset status=* dataset=/ScoutingPFRun3/Run2024*/HLTSCOUT'`
+./utils/dasgoclient --query='dataset dataset=/ScoutingPFRun3/Run2024*/HLTSCOUT'
 ```
 
 ```
-./utils/dasgoclient --query='dataset status=* dataset=/ScoutingPFRun3/Run2025*/HLTSCOUT'`
+./utils/dasgoclient --query='dataset dataset=/ScoutingPFRun3/Run2025*/HLTSCOUT'
 ```
 
 
 #### Run3 Monitoring Datasets
 
 ```
-./utils/dasgoclient --query='dataset status=* dataset=/ScoutingPFMonitor/Run2024*/RAW'`
+./utils/dasgoclient --query='dataset dataset=/ScoutingPFMonitor/Run2024*/RAW'
 ```
 
 ```
-./utils/dasgoclient --query='dataset status=* dataset=/ScoutingPFMonitor/Run2025*/RAW'`
+./utils/dasgoclient --query='dataset dataset=/ScoutingPFMonitor/Run2025*/RAW'
 ```
 
 
 #### Run3 QCD MC Samples
 
 ```
-./utils/dasgoclient --query='dataset status=* dataset=/QCD_Pt_*0to*0_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM'`
+./utils/dasgoclient --query='dataset dataset=/QCD_*PT-*0_TuneCP5_13p6TeV_pythia8/Run*Summer*/AODSIM'
 ```
-
-```
-./utils/dasgoclient --query='dataset status=* dataset=/QCD_Pt_*0to*0_TuneCP5_13p6TeV_pythia8/Run3Winter22DRPremix-122X_mcRun3_2021_realistic_v9-v2/AODSIM'`
-```
-
-> [!NOTE]
-> Please note that we also used the `QCD_Pt_3200toInf_TuneCP5_13p6TeV_pythia8` sample in addition to these queries.
-
-
-
 
 
 ## Extras
@@ -211,6 +204,19 @@ edmPluginDump | grep -i scouting
 ```
 ls $CMSSW_RELEASE_BASE/bin/$SCRAM_ARCH/edm*
 ```
+
+
+### 6) Check dataset availability on sites:
+
+```
+./utils/check_dataset_completeness /QCD_PT-*0_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM --check-files
+```
+
+> [!TIP]
+> Input list is also supported with the `--input <yourList>` argument. <br>
+> Only show sites where dataset presence is 100% (`--full_presence`). <br>
+> Use `--include-tapes` to show **TAPE** information alongside **DISK** details.
+> The use of wildcard (`*`) in the dataset argument is supported.
 
 
 ## Useful Links
