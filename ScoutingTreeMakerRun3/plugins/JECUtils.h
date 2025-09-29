@@ -35,9 +35,19 @@ namespace jec {
   std::unique_ptr<JetCorrectionUncertainty>
   buildUncertaintyFromTxt(const std::string& uncTxtFile);
 
+  /// ES-mode helper: try ES first; optionally fall back to TXT if ES is missing.
+  /// Returns nullptr if neither is available. Sets usedTxtFallback=true if TXT was used.
+  std::unique_ptr<JetCorrectionUncertainty>
+  buildUncertaintyEsWithOptionalTxtFallback(const JetCorrectorParametersCollection& coll,
+                                            const std::string& uncTxtFile,
+                                            bool allowFallback,
+                                            bool& usedTxtFallback);
+
+
   /// Pretty join of level names for logging.
   std::string joinLevels(const std::vector<std::string>& levels);
 }
 
 #endif
+
 

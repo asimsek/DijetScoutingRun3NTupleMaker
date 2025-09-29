@@ -9,11 +9,13 @@
 #include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/ScoutingTreeMakerRun3.h"
 #include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/JECUtils.h"
 #include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/JetVetoUtils.h"
+#include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/JECLog.h"
+
 
 
 ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
 {
-  srcPFJets_                = consumes<vector<Run3ScoutingPFJet> >          (iConfig.getParameter<InputTag>("pfcands"));
+  srcPFJets_                = consumes<vector<Run3ScoutingPFJet> >          (iConfig.getParameter<InputTag>("pfjets"));
   srcPFCands_               = consumes<vector<Run3ScoutingParticle> >       (iConfig.getParameter<InputTag>("pfcands"));
   srcRho_                   = consumes<double>                              (iConfig.getParameter<edm::InputTag>("rho"));
   srcMET_                   = consumes<double>                              (iConfig.getParameter<edm::InputTag>("pfMet"));
@@ -45,6 +47,7 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   //------- JEC:: JEC Uncertainty config -------
   applyJECUncertainty_ =   iConfig.getParameter<bool>("applyJECUncertainty");
   jecUncTxtFile_       =   iConfig.getParameter<std::string>("jecUncTxtFile");
+  jecUncFallbackToTxt_ =   iConfig.getParameter<bool>("jecUncFallbackToTxt");
 
   //------- Jet Veto Map config -------
   applyJetVetoMap_   = iConfig.getParameter<bool>("applyJetVetoMap");
@@ -61,6 +64,13 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   //------- JEC:: Build TXT corrector (file mode, no per-run residual)
   if (applyJEC_ && jecMode_ == "txt" && !jecResidualByRun_) {
     jecCorrector_ = jec::buildTxtCorrector(jecTxtFiles_, /*residual*/"");
+  }
+
+  // Pretty banner for TXT mode (no per-run residual)
+  if (applyJEC_ && jecMode_=="txt" && !jecResidualByRun_) {
+    jec::log::print(jec::log::TxtConfig{
+      jecMode_, jecPayload_, /*residual*/"", jecUncTxtFile_, jecLevels_, jecTxtFiles_
+    });
   }
 
   //------- JEC:: TXT-mode uncertainty (independent of per-run residual)
@@ -117,7 +127,7 @@ void ScoutingTreeMakerRun3::beginJob()
   //------- Form tree branches -------
   outTree_ = fs_->make<TTree>("events","events");
   outTree_->SetAutoSave(0); //------- Stop ROOT from writing backup cycles
-  outTree_->SetAutoFlush(50000); //------- flush/optimize every ~50k events
+  outTree_->SetAutoFlush(-20*1024*1024);   // flush/optimize every ~20 MB
 
   outTree_->Branch("runNo"                 ,&run_                ,"run_/I"                );
   outTree_->Branch("evtNo"                 ,&evt_                ,"evt_/L"                );
@@ -219,17 +229,19 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
       jecCorrector_ = jec::buildTxtCorrector(jecTxtFiles_, residualKey);
       if (!jecCorrector_) {
         throw cms::Exception("JEC")
-          << "TXT JEC build: no parameters after applying per-run residual logic "
-          << "(run " << iEvent.id().run() << "). Check jecTxtFiles/jecResidualMap.";
+          << "TXT JEC build failed (run " << iEvent.id().run()
+          << "). Check jecTxtFiles/jecResidualMap.";
       }
-      jecResidualCurrent_ = cacheKey;
+      jecResidualCurrent_ = haveResidual ? residualKey : std::string();
 
-      if (!jecLoggedOnce_) {
-        jecLoggedOnce_ = true;
-        edm::LogInfo("JEC") << "TXT JEC loaded with levels: "
-                            << jec::joinLevels(jecLevels_)
-                            << (haveResidual ? (std::string(" | Residual(TXT): ") + residualKey)
-                                             : " | Residual: (none)");
+      // print only if this (mode|payload|residual) hasn't been printed yet
+      const std::string bannerKey =
+          jecMode_ + "|" + jecPayload_ + "|" + (haveResidual ? residualKey : "(none)");
+      if (bannerKey != jecBannerKey_) {
+        jec::log::print(jec::log::TxtConfig{
+          jecMode_, jecPayload_, (haveResidual ? residualKey : ""), jecUncTxtFile_, jecLevels_, jecTxtFiles_
+        });
+        jecBannerKey_ = bannerKey;
       }
     }
   }
@@ -240,39 +252,32 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     jecCorrector_ = jec::buildEsCorrector(coll, jecLevels_);
   }
 
-  if (!jecLoggedOnce_ && jecCorrector_) {
-    jecLoggedOnce_ = true;
-    edm::LogInfo("JEC") << "ES JEC loaded for payload: " << jecPayload_
-                        << " with levels: " << jec::joinLevels(jecLevels_);
-  }
-
-  //------- JEC:: Build JES uncertainty from ES (if available)
+  //------- JEC:: Build JES uncertainty in ES mode (ES first, optional TXT fallback)
+  static bool esUncUsedTxt = false; // remember the source so the banner can reflect it
   if (applyJECUncertainty_ && jecMode_ == "es" && !jecUnc_) {
     const auto& coll = iSetup.getData(jecESGetToken_);
-    jecUnc_ = jec::buildUncertaintyFromEs(coll);
-    static bool warned = false;
-    if (!jecUnc_ && !warned) {
-      warned = true;
-      edm::LogInfo("JEC") << "No ES 'Uncertainty' payload for " << jecPayload_
-                          << ". Provide jecUncTxtFile or switch jecMode='txt'.";
+    bool usedTxt = false;
+    jecUnc_ = jec::buildUncertaintyEsWithOptionalTxtFallback(
+                coll, jecUncTxtFile_, jecUncFallbackToTxt_, usedTxt);
+
+    esUncUsedTxt = usedTxt;
+    if (!jecUnc_) {
+      edm::LogWarning("JEC") << "[JEC] Not found any unc in es or in txt file.";
     }
   }
 
-  //------- Reserve capacity for all jet vectors once per event
-  const size_t nj = PFJets->size();
-  ptAK4_          ->reserve(nj);   etaAK4_        ->reserve(nj);    phiAK4_    ->reserve(nj);
-  massAK4_        ->reserve(nj);   energyAK4_     ->reserve(nj);    areaAK4_   ->reserve(nj);
-  chfAK4_         ->reserve(nj);   nhfAK4_        ->reserve(nj);    phfAK4_    ->reserve(nj);
-  elfAK4_         ->reserve(nj);   mufAK4_        ->reserve(nj);    hf_hfAK4_  ->reserve(nj);
-  hf_emfAK4_      ->reserve(nj);   hofAK4_        ->reserve(nj);    rawPtAK4_  ->reserve(nj);
-  chEmEAK4_       ->reserve(nj);   neEmEAK4_      ->reserve(nj);
-  chEmFAK4_       ->reserve(nj);   neEmFAK4_      ->reserve(nj);
-  idLAK4_         ->reserve(nj);   idTAK4_        ->reserve(nj);
-  chHadMultAK4_   ->reserve(nj);   neHadMultAK4_  ->reserve(nj);
-  phoMultAK4_     ->reserve(nj);   elMultAK4_     ->reserve(nj);
-  muMultAK4_      ->reserve(nj);   hfHadMultAK4_  ->reserve(nj);
-  hfEmMultAK4_    ->reserve(nj);
-  jetVetoMapAK4_  ->reserve(nj);
+
+  // Pretty banner for ES mode (prints once per effective ES state)
+  if (jecMode_ == "es" && jecCorrector_) {
+    // include uncertainty *source* in the key so we reprint if it switches ES<->TXT
+    const std::string bannerKey =
+        std::string("es|") + jecPayload_
+        + "|unc:" + (jecUnc_ ? (esUncUsedTxt ? "txt" : "es") : "none");
+    if (bannerKey != jecBannerKey_) {
+      jec::log::print(jec::log::EsConfig{ jecPayload_, jecLevels_, bool(jecUnc_), esUncUsedTxt });
+      jecBannerKey_ = bannerKey;
+    }
+  }
 
   //-------------- Event Info -----------------------------------
   rho_      =   rhoHandle.isValid()     ?  static_cast<float>(*rhoHandle)    : -999.f;
@@ -289,7 +294,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
       jetVetoMapFiles_,
       run_,
       vetoMapCurrentKey_,
-      jetVetoMap_  // unique_ptr<TH2>&
+      jetVetoMap_
   );
 
   //------- SumET from PF-candidate pt (scouting has no stored sumEt)
@@ -365,17 +370,42 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
   }
 
 
+  // sort by corrected pT
   std::vector<unsigned> sortedPFJetIdx(PFJets->size());
   std::iota(sortedPFJetIdx.begin(), sortedPFJetIdx.end(), 0u);
   std::sort(sortedPFJetIdx.begin(), sortedPFJetIdx.end(),
             [&](unsigned a, unsigned b){ return corrPt[a] > corrPt[b]; });
+
+  // build the list of jets that actually pass the corrected pT cut
+  std::vector<unsigned> passIdx;
+  passIdx.reserve(sortedPFJetIdx.size());
+  for (auto i : sortedPFJetIdx) {
+    if (corrPt[i] > ptMinPF_) passIdx.push_back(i);
+  }
+
+  //------- Reserve capacity for all jet vectors once per event
+  const size_t nPass = passIdx.size();
+  ptAK4_          ->reserve(nPass);   etaAK4_            ->reserve(nPass);    phiAK4_    ->reserve(nPass);
+  massAK4_        ->reserve(nPass);   energyAK4_         ->reserve(nPass);    areaAK4_   ->reserve(nPass);
+  chfAK4_         ->reserve(nPass);   nhfAK4_            ->reserve(nPass);    phfAK4_    ->reserve(nPass);
+  elfAK4_         ->reserve(nPass);   mufAK4_            ->reserve(nPass);    hf_hfAK4_  ->reserve(nPass);
+  hf_emfAK4_      ->reserve(nPass);   hofAK4_            ->reserve(nPass);    rawPtAK4_  ->reserve(nPass);
+  chEmEAK4_       ->reserve(nPass);   neEmEAK4_          ->reserve(nPass);
+  chEmFAK4_       ->reserve(nPass);   neEmFAK4_          ->reserve(nPass);
+  idLAK4_         ->reserve(nPass);   idTAK4_            ->reserve(nPass);
+  chHadMultAK4_   ->reserve(nPass);   neHadMultAK4_      ->reserve(nPass);
+  phoMultAK4_     ->reserve(nPass);   elMultAK4_         ->reserve(nPass);
+  muMultAK4_      ->reserve(nPass);   hfHadMultAK4_      ->reserve(nPass);
+  hfEmMultAK4_    ->reserve(nPass);   jecRelUncAK4_      ->reserve(nPass);
+  jetVetoMapAK4_  ->reserve(nPass);   jecUpFactorAK4_    ->reserve(nPass);
+  jecFactorAK4_   ->reserve(nPass);   jecDownFactorAK4_  ->reserve(nPass);
 
 
   nPFJets_ = 0;
   int vetoCount = 0;
   float htAK4 = 0.0;
   TLorentzVector vP4AK4;
-  for (unsigned idx : sortedPFJetIdx) { 
+  for (unsigned idx : passIdx) {
     const auto& ijet    =   PFJets->at(idx);
     float eta           =   ijet.eta(); 
     float pt_raw        =   ijet.pt();
@@ -391,7 +421,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     float jec = jecCache[idx];  // idx is the original PFJets index, e.g. sortedPFJetIdx[k]
 
     //----- Corrected 4-vector for kinematics
-    const float pt_corr   =  pt_raw   * jec;
+    const float pt_corr   =  corrPt[idx];
     const float mass_corr =  mass_raw * jec;
     vP4AK4.SetPtEtaPhiM(pt_corr, eta, phi, mass_corr);
     const double jet_energy = vP4AK4.Energy();
@@ -409,18 +439,9 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     static unsigned jecPrintedJets = 0;
     if (printJECInfo_ && jecPrintedJets < printJECFirstNJets_) {
       ++jecPrintedJets;
-      edm::LogVerbatim("JEC")
-        << "run:lumi:evt " << run_ << ":" << lumi_ << ":" << evt_
-        << " | jet#" << jecPrintedJets
-        << " | eta=" << eta
-        << " pt_raw=" << pt_raw
-        << " area=" << ijet.jetArea()
-        << " rho=" << std::max(0.f, rho_)
-        << " | JEC=" << jec
-        << " pt_corr=" << pt_corr
-        << " | JES_rel=" << jes_unc_rel
-        << " upFactor=" << (1.f + jes_unc_rel)
-        << " downFactor=" << std::max(0.f, 1.f - jes_unc_rel);
+      jec::log::printJet(jecPrintedJets, run_, lumi_, evt_,
+                         eta, pt_raw, ijet.jetArea(), std::max(0.f, rho_),
+                         jec, pt_corr, jes_unc_rel);
     }
 
     //----- JETID
@@ -461,45 +482,43 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     //--- flag eta–phi in veto map (1=vetoed, 0=ok). No filtering here; only store flags.
     int inVeto = jetveto::flagFromMap(jetVetoMap_.get(), eta, phi);
 
-    if (pt_corr > ptMinPF_) {
-      htAK4 += pt_corr;
-      if (inVeto) ++vetoCount;
+    htAK4 += pt_corr;
+    if (inVeto) ++vetoCount;
 
-      ptAK4_                 ->push_back(pt_corr);
-      rawPtAK4_              ->push_back(pt_raw);
-      phiAK4_                ->push_back(phi);
-      etaAK4_                ->push_back(eta);
-      massAK4_               ->push_back(mass_corr);
-      energyAK4_             ->push_back(jet_energy);
-      jecFactorAK4_          ->push_back(jec);
-      jecRelUncAK4_          ->push_back(jes_unc_rel);
-      jecUpFactorAK4_        ->push_back(1.f + jes_unc_rel);
-      jecDownFactorAK4_      ->push_back(std::max(0.f, 1.f - jes_unc_rel));
-      idLAK4_                ->push_back(idL);
-      idTAK4_                ->push_back(idT);
-      chfAK4_                ->push_back(chEF);
-      nhfAK4_                ->push_back(nhEF);
-      phfAK4_                ->push_back(phoEF);
-      elfAK4_                ->push_back(elEF);
-      mufAK4_                ->push_back(muEF);
-      chHadMultAK4_          ->push_back(chHadMult);
-      neHadMultAK4_          ->push_back(neHadMult);
-      areaAK4_               ->push_back(ijet.jetArea());
-      hf_hfAK4_              ->push_back(hfHadEF);
-      hf_emfAK4_             ->push_back(hfEmEF);
-      hofAK4_                ->push_back(hoEF);
-      chEmEAK4_              ->push_back(chEmE);
-      neEmEAK4_              ->push_back(neEmE);
-      chEmFAK4_              ->push_back(chEmF);
-      neEmFAK4_              ->push_back(neEmF);
-      phoMultAK4_            ->push_back(phoMult);
-      elMultAK4_             ->push_back(elMult);
-      muMultAK4_             ->push_back(muMult);
-      hfHadMultAK4_          ->push_back(hfHadMult);
-      hfEmMultAK4_           ->push_back(hfEmMult);
-      jetVetoMapAK4_         ->push_back(inVeto);
+    ptAK4_             ->push_back(pt_corr);
+    rawPtAK4_          ->push_back(pt_raw);
+    phiAK4_            ->push_back(phi);
+    etaAK4_            ->push_back(eta);
+    massAK4_           ->push_back(mass_corr);
+    energyAK4_         ->push_back(jet_energy);
+    jecFactorAK4_      ->push_back(jec);
+    jecRelUncAK4_      ->push_back(jes_unc_rel);
+    jecUpFactorAK4_    ->push_back(1.f + jes_unc_rel);
+    jecDownFactorAK4_  ->push_back(std::max(0.f, 1.f - jes_unc_rel));
+    idLAK4_            ->push_back(idL);
+    idTAK4_            ->push_back(idT);
+    chfAK4_            ->push_back(chEF);
+    nhfAK4_            ->push_back(nhEF);
+    phfAK4_            ->push_back(phoEF);
+    elfAK4_            ->push_back(elEF);
+    mufAK4_            ->push_back(muEF);
+    chHadMultAK4_      ->push_back(chHadMult);
+    neHadMultAK4_      ->push_back(neHadMult);
+    areaAK4_           ->push_back(ijet.jetArea());
+    hf_hfAK4_          ->push_back(hfHadEF);
+    hf_emfAK4_         ->push_back(hfEmEF);
+    hofAK4_            ->push_back(hoEF);
+    chEmEAK4_          ->push_back(chEmE);
+    neEmEAK4_          ->push_back(neEmE);
+    chEmFAK4_          ->push_back(chEmF);
+    neEmFAK4_          ->push_back(neEmF);
+    phoMultAK4_        ->push_back(phoMult);
+    elMultAK4_         ->push_back(elMult);
+    muMultAK4_         ->push_back(muMult);
+    hfHadMultAK4_      ->push_back(hfHadMult);
+    hfEmMultAK4_       ->push_back(hfEmMult);
+    jetVetoMapAK4_     ->push_back(inVeto);
 
-    }
 
   } //------- Jet loop
 
@@ -517,17 +536,11 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
   float v4 = std::numeric_limits<float>::infinity();
 
   if (met_ >= 0.f && !phiAK4_->empty()) {
-    // build indices 0..N-1 sorted by corrected pT (desc)
-    std::vector<size_t> idx(ptAK4_->size());
-    std::iota(idx.begin(), idx.end(), 0u);
-    std::sort(idx.begin(), idx.end(), [&](size_t a, size_t b){ return (*ptAK4_)[a] > (*ptAK4_)[b]; });
-
-    const size_t upto = std::min<size_t>(4, idx.size());
-    for (size_t r = 0; r < upto; ++r) {
-      const size_t i = idx[r];
+    const size_t upto = std::min<size_t>(4, phiAK4_->size()); // already sorted by corr pT
+    for (size_t i = 0; i < upto; ++i) {
       const float dphi = std::fabs(reco::deltaPhi(metphi_, (*phiAK4_)[i]));
       if (dphi < v4) v4 = dphi;
-      if (r < 2 && dphi < v2) v2 = dphi;
+      if (i < 2 && dphi < v2) v2 = dphi;
     }
   }
 
@@ -537,16 +550,10 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
 
   if (ptAK4_->size() > 1) {
     // find indices of the top-2 jets by *corrected* pT
-    size_t i1 = 0, i2 = 1;
-    if ((*ptAK4_)[i2] > (*ptAK4_)[i1]) std::swap(i1, i2);
-    for (size_t i = 2; i < ptAK4_->size(); ++i) {
-      if ((*ptAK4_)[i] > (*ptAK4_)[i1]) { i2 = i1; i1 = i; }
-      else if ((*ptAK4_)[i] > (*ptAK4_)[i2]) { i2 = i; }
-    }
-
     TLorentzVector j1, j2;
-    j1.SetPtEtaPhiM((*ptAK4_)[i1], (*etaAK4_)[i1], (*phiAK4_)[i1], (*massAK4_)[i1]);
-    j2.SetPtEtaPhiM((*ptAK4_)[i2], (*etaAK4_)[i2], (*phiAK4_)[i2], (*massAK4_)[i2]);
+    j1.SetPtEtaPhiM((*ptAK4_)[0], (*etaAK4_)[0], (*phiAK4_)[0], (*massAK4_)[0]);
+    j2.SetPtEtaPhiM((*ptAK4_)[1], (*etaAK4_)[1], (*phiAK4_)[1], (*massAK4_)[1]);
+
     mjjAK4_    = (j1 + j2).M();
     dEtajjAK4_ = std::fabs(j1.Eta() - j2.Eta());
     dPhijjAK4_ = std::fabs(j1.DeltaPhi(j2));
@@ -666,5 +673,6 @@ ScoutingTreeMakerRun3::~ScoutingTreeMakerRun3()
 }
 
 DEFINE_FWK_MODULE(ScoutingTreeMakerRun3);
+
 
 

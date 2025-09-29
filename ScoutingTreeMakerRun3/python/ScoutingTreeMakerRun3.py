@@ -112,8 +112,9 @@ process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
 
                             # --- JEC options ---
                             applyJEC                 =  cms.bool(True),
+                            jecUncFallbackToTxt      =  cms.bool(True),          # ES-mode uncertainty fallback control
                             jecMode                  =  cms.string(jecMode_),
-                            jecPayload               =  cms.string("AK4PFHLT"),  # e.g. 'AK4PFHLT' or 'AK4PFPuppiHLT'
+                            jecPayload               =  cms.string("AK4PFHLT"),  # e.g. 'AK4PFHLT' or 'AK8PFHLT' `conddb list <YourGlobalTag> | grep JetCorrectionsRecord`
                             jecLevels                =  cms.vstring("L1FastJet","L2Relative","L3Absolute","L2L3Residual"),
 
                             # --- TXT base files (L1/L2/L3) from file only if txt mode; otherwise empty
@@ -130,7 +131,8 @@ process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
                             printJECFirstNJets       =  cms.uint32(6),     # print at most this many jets (total)
 
                             # --- JETS/MET
-                            pfcands                  =  cms.InputTag("hltScoutingPFPacker"                             ),
+                            pfjets                   =  cms.InputTag("hltScoutingPFPacker"                             ),
+                            pfcands                  =  cms.InputTag("hltScoutingPFPacker"                             ), # just to be safe...
                             rho                      =  cms.InputTag("hltScoutingPFPacker"             ,"rho"          ),
                             pfMet                    =  cms.InputTag("hltScoutingPFPacker"             ,"pfMetPt"      ),
                             pfMetPhi                 =  cms.InputTag("hltScoutingPFPacker"             ,"pfMetPhi"     ),
@@ -159,8 +161,6 @@ process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
                             NoiseFilterResultsTag    =  cms.InputTag('TriggerResults' ,'' ,'HLT'),
                             l1GtSrc                  =  cms.InputTag('gtStage2Digis'  ,'' ,'HLT'),
                             l1tResults               =  cms.InputTag('','',''),
-                            UnprefirableEventToken   =  cms.InputTag('simGtExtUnprefireable','','PAT'),
-                            daqPartitions            =  cms.uint32(1),
                             l1tIgnoreMaskAndPrescale =  cms.bool(False),
                             throw                    =  cms.bool(True),
                             usePathStatus            =  cms.bool(False),

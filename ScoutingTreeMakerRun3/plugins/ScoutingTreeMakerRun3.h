@@ -10,13 +10,13 @@
 #include <cstdint>
 #include <TTree.h>
 #include <algorithm>
+#include <sstream>
 #include <TLorentzVector.h>
 #include <TFile.h>
 #include <TH2.h>
 #include <TKey.h>
-//#include <memory>
+#include <memory>
 //#include <iostream>
-//#include <sstream>
 //#include <istream>
 //#include <fstream>
 //#include <iomanip>
@@ -129,9 +129,11 @@ class ScoutingTreeMakerRun3 : public edm::one::EDAnalyzer<>
 
 
     // --- JEC uncertainty (JES) config/state ---
-    bool applyJECUncertainty_;             // enable JES uncertainty
-    std::string jecUncTxtFile_;            // used if jecMode_ == "txt"
-    std::unique_ptr<JetCorrectionUncertainty> jecUnc_;  // built from ES or TXT
+    bool applyJECUncertainty_;                              // enable JES uncertainty
+    std::string jecUncTxtFile_;                             // used if jecMode_ == "txt"
+    std::unique_ptr<JetCorrectionUncertainty> jecUnc_;      // built from ES or TXT
+    bool jecUncFallbackToTxt_;                              // ES mode only: allow fallback to TXT for uncertainty
+
 
     // --- Debug/printing controls ---
     bool     printJECInfo_;          // print ES/JEC info and a few per-jet lines
@@ -200,11 +202,13 @@ class ScoutingTreeMakerRun3 : public edm::one::EDAnalyzer<>
     std::vector<float> *jecUpFactorAK4_;         // 1 + unc
     std::vector<float> *jecDownFactorAK4_;       // 1 - unc
     bool jecLoggedOnce_;
+    std::string jecBannerKey_;                   // remembers last printed (mode|payload|residual)
 
 };
 
 
 
 #endif
+
 
 

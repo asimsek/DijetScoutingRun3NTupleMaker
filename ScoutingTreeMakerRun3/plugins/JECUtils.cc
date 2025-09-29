@@ -88,11 +88,40 @@ namespace jec {
   }
 
   std::unique_ptr<JetCorrectionUncertainty>
+  buildUncertaintyEsWithOptionalTxtFallback(const JetCorrectorParametersCollection& coll,
+                                            const std::string& uncTxtFile,
+                                            bool allowFallback,
+                                            bool& usedTxtFallback)
+  {
+    usedTxtFallback = false;
+
+    // Try ES first
+    if (auto es = buildUncertaintyFromEs(coll)) {
+      return es;
+    }
+
+    // Optionally fall back to TXT
+    if (allowFallback && !uncTxtFile.empty()) {
+      if (auto txt = buildUncertaintyFromTxt(uncTxtFile)) {
+        usedTxtFallback = true;
+        return txt;
+      }
+    }
+
+    return nullptr;
+  }
+
+
+  std::unique_ptr<JetCorrectionUncertainty>
   buildUncertaintyFromTxt(const std::string& uncTxtFile) {
     if (uncTxtFile.empty()) return nullptr;
-    edm::FileInPath f(uncTxtFile);
-    JetCorrectorParameters up(f.fullPath());
-    return std::make_unique<JetCorrectionUncertainty>(up);
+    try {
+      edm::FileInPath f(uncTxtFile);
+      JetCorrectorParameters up(f.fullPath());
+      return std::make_unique<JetCorrectionUncertainty>(up);
+    } catch (...) {
+      return nullptr;
+    }
   }
 
   std::string joinLevels(const std::vector<std::string>& levels) {
@@ -104,5 +133,6 @@ namespace jec {
   }
 
 } // namespace jec
+
 
 
