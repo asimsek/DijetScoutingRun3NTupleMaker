@@ -171,16 +171,16 @@ This tool allows you to use existing cmssw library ([GenXSecAnalyzer.cc](https:/
 
 
 ```
-cmsRun ./utils/genXsec_cfg inputFiles="/store/mc/Run3Winter22DRPremix/QCD_Pt_50to80_TuneCP5_13p6TeV_pythia8/AODSIM/122X_mcRun3_2021_realistic_v9-v2/60000/00013e73-2f84-4d54-a6f5-cfdfafb08614.root" maxEvents=-1
+cmsRun ./utils/genXsec_cfg.py inputFiles="root://cms-xrd-global.cern.ch//store/mc/RunIII2024Summer24DRPremix/QCD_Bin-PT-50to80_TuneCP5_13p6TeV_pythia8/AODSIM/140X_mcRun3_2024_realistic_v26-v2/120000/005210b9-bf51-4f56-be43-814a093fc0af.root" maxEvents=-1
 ```
 
 ```
-cmsRun ./utils/genXsec_cfg dataset="/QCD_Pt_2400to3200_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM" maxEvents=-1
+cmsRun ./utils/genXsec_cfg.py dataset="/QCD_Pt_2400to3200_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM" maxEvents=-1
 ```
 
 
 > [!TIP]
-> Wildcard dataset searches are allowed. Please use star (\*) character in the dataset query while using the `genXsec_cfg` tool. (e.g.: `/QCD_Pt_*0to*0_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM'`).
+> Wildcard dataset searches are allowed. Please use star (\*) character in the dataset query while using the `genXsec_cfg.py` tool. (e.g.: `/QCD_Pt_*0to*0_TuneCP5_13p6TeV_pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2/MINIAODSIM'`).
 
 
 > [!TIP]

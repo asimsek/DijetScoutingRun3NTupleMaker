@@ -1,4 +1,6 @@
-# utils/genXsec_cfg.py
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os, re, shlex, subprocess, sys
 import FWCore.ParameterSet.Config as cms
 from FWCore.ParameterSet.VarParsing import VarParsing
