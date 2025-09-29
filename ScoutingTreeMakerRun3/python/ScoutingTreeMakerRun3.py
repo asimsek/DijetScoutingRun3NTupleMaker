@@ -37,7 +37,7 @@ process.MessageLogger.cerr.default = cms.untracked.PSet(limit=cms.untracked.int3
 process.MessageLogger.cerr.JEC = cms.untracked.PSet(limit = cms.untracked.int32(1000000000))
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(5000)
+    input = cms.untracked.int32(-1)
 )
 
 
@@ -46,12 +46,13 @@ process.maxEvents = cms.untracked.PSet(
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
         'root://cms-xrd-global.cern.ch//store/data/Run2025C/ScoutingPFRun3/HLTSCOUT/v1/000/392/925/00000/b95d5cc9-62b2-4b3b-a0f9-d0d79b52a85d.root'
-        #'root://cms-xrd-global.cern.ch//store/mc/Run3Winter22DRPremix/QCD_Pt_50to80_TuneCP5_13p6TeV_pythia8/AODSIM/122X_mcRun3_2021_realistic_v9-v2/60000/0004f6b4-3485-42c0-9b21-a026af96a8ff.root'
+        #'root://cms-xrd-global.cern.ch//store/mc/RunIII2024Summer24DRPremix/QCD_Bin-PT-50to80_TuneCP5_13p6TeV_pythia8/AODSIM/140X_mcRun3_2024_realistic_v26-v2/120000/005210b9-bf51-4f56-be43-814a093fc0af.root'
     )
 )
 
-
+#-----------------------------------------------------------------------#
 #------------------ JEC reading from config file  -----------------------
+#-----------------------------------------------------------------------#
 from DijetScoutingRun3NTupleMaker.ScoutingTreeMakerRun3.configs.jec_utils import (
     infer_era_from_filenames,
     load_jec_config_text,
@@ -59,27 +60,48 @@ from DijetScoutingRun3NTupleMaker.ScoutingTreeMakerRun3.configs.jec_utils import
 )
 
 #------ load JEC config db and pick the block
-era_block = get_era_block(load_jec_config_text(os.path.join(os.path.dirname(__file__), 'configs', 'jec_config.txt')), era_)
+data_jec_list = "data_jec_list.txt"
+mc_jec_list   = "mc_jec_list.txt"
+
+data_block = get_era_block(
+    load_jec_config_text(os.path.join(os.path.dirname(__file__), '../../data/cfg', data_jec_list)),
+    era_
+)
+mc_block = get_era_block(
+    load_jec_config_text(os.path.join(os.path.dirname(__file__), '../../data/cfg', mc_jec_list)),
+    era_
+)
 
 #------ Assemble base TXT (no Residual here by design)
-base_txt = [era_block.get('L1FastJet',''),
-            era_block.get('L2Relative',''),
-            era_block.get('L3Absolute','')]
-base_txt = [p for p in base_txt if p]  # drop empties
+base_txt_data = [data_block.get('L1FastJet',''),
+                 data_block.get('L2Relative',''),
+                 data_block.get('L3Absolute','')]
+base_txt_data = [p for p in base_txt_data if p]
 
-#------ Residual run map (list of (min,max,file))
-residual_map = list(era_block.get('L2L3Residual', []))
-unc_file = era_block.get('Unc','')
+base_txt_mc   = [mc_block.get('L1FastJet',''),
+                 mc_block.get('L2Relative',''),
+                 mc_block.get('L3Absolute','')]
+base_txt_mc   = [p for p in base_txt_mc if p]
 
-#--------------------------------------------------------------------------
+#------ Residual run maps (list of min:max:file strings)
+residual_map_data = list(data_block.get('L2L3Residual', []))
+residual_map_mc   = list(mc_block.get('L2L3Residual', []))  # will be ignored for MC in C++
 
-#------ Jet veto map files (may be a single string or a list of run-ranged entries)
-vetomap_entries = era_block.get('JetVetoMap', [])
-if isinstance(vetomap_entries, str):
-    vetomap_entries = [vetomap_entries]
-vetomap_files = list(vetomap_entries)
-vetomap_files = [str(x).strip() for x in vetomap_files if str(x).strip()]
-#--------------------------------------------------------------------------
+#------ Uncertainty files
+unc_file_data = data_block.get('Unc','')
+unc_file_mc   = mc_block.get('Unc','')
+
+#------ Jet veto map files (accept string or list)
+def _norm_vetomap(block):
+    v = block.get('JetVetoMap', [])
+    if isinstance(v, str): v = [v]
+    return [str(x).strip() for x in v if str(x).strip()]
+
+vetomap_files_data = _norm_vetomap(data_block)
+vetomap_files_mc   = _norm_vetomap(mc_block)
+#-----------------------------------------------------------------------#
+#-----------------------------------------------------------------------#
+#-----------------------------------------------------------------------#
 
 
 process.TFileService = cms.Service("TFileService",
@@ -104,12 +126,10 @@ HLT_Alias = cms.vstring([ (s.replace("DST_", "")[:-2] if s.endswith("_v") else s
 
 
 process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
-                            isData                   =  cms.bool(True),
                             ptMinPF                  =  cms.double(15),
 
                             # --- Jet veto maps ---
                             applyJetVetoMap          =  cms.bool(doJetVetoMap),
-                            jetVetoMapFiles          =  cms.vstring(vetomap_files),
 
                             # --- JEC options ---
                             applyJEC                 =  cms.bool(True),
@@ -119,14 +139,24 @@ process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
                             jecPayload               =  cms.string("AK8PFHLT"),  # e.g. 'AK4PFHLT' or 'AK8PFHLT' `conddb list <YourGlobalTag> | grep JetCorrectionsRecord`
                             jecLevels                =  cms.vstring("L1FastJet","L2Relative","L3Absolute","L2L3Residual"),
 
-                            # --- TXT base files (L1/L2/L3) from file only if txt mode; otherwise empty
-                            jecTxtFiles              =  cms.vstring(base_txt),
+                            # --- Provide both sources; C++ will choose once based on 'isData'
+                            jecTxtFilesData          =  cms.vstring(base_txt_data),
+                            jecResidualMapData       =  cms.vstring(residual_map_data),
+                            jecUncTxtFileData        =  cms.string(unc_file_data),
+                            jetVetoMapFilesData      =  cms.vstring(vetomap_files_data),
 
-                            # --- TXT per-run residual mapping (enabled only in txt mode)
-                            jecResidualByRun         =  cms.bool(len(residual_map)>0),
-                            jecResidualMap           =  cms.vstring(residual_map),
+                            jecTxtFilesMC            =  cms.vstring(base_txt_mc),
+                            jecResidualMapMC         =  cms.vstring(residual_map_mc),     # will be ignored for MC residuals
+                            jecUncTxtFileMC          =  cms.string(unc_file_mc),
+                            jetVetoMapFilesMC        =  cms.vstring(vetomap_files_mc),
+
+                            # Keep the original single-set params as empty; c++ script fills them after it picks
+                            jecTxtFiles              =  cms.vstring(),
+                            jecResidualByRun         =  cms.bool(False),
+                            jecResidualMap           =  cms.vstring(),
                             applyJECUncertainty      =  cms.bool(True),
-                            jecUncTxtFile            =  cms.string(unc_file),
+                            jecUncTxtFile            =  cms.string(""),
+                            jetVetoMapFiles          =  cms.vstring(),
 
                             # --- Print controls (for ES/TXT alike)
                             printJECInfo             =  cms.bool(True),    # set True to print

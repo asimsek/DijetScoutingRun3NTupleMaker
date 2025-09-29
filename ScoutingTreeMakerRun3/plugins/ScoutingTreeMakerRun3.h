@@ -122,6 +122,14 @@ class ScoutingTreeMakerRun3 : public edm::one::EDAnalyzer<>
     std::vector<std::string> jecLevels_;   // e.g. {"L1FastJet","L2Relative","L3Absolute",["L2L3Residual"]}
     std::vector<std::string> jecTxtFiles_; // txt paths when jecMode_ == "txt"
 
+
+    // Candidate inputs from Python; script picks the right one on the first event via isData
+    std::vector<std::string> jecTxtFilesData_, jecTxtFilesMC_;
+    std::vector<std::string> jecResidualMapData_, jecResidualMapMC_;
+    std::string              jecUncTxtFileData_,  jecUncTxtFileMC_;
+    std::vector<std::string> jetVetoMapFilesData_, jetVetoMapFilesMC_;
+    bool                     jecPickedByIsData_{false};
+
     // --- TXT-mode: optional per-run override for L2L3Residual
     bool jecResidualByRun_;                      // if true, choose Residual TXT by run
     std::vector<std::string> jecResidualMap_;    // entries "min:max:file" (min inclusive, max exclusive; -1 = open)

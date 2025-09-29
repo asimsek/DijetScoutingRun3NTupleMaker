@@ -28,7 +28,6 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   algTag_                   = iConfig.getParameter<edm::InputTag>("l1GtSrc");
   extTag_                   = iConfig.getParameter<edm::InputTag>("l1GtSrc");
   l1GtUtils_                = new l1t::L1TGlobalUtil(iConfig, consumesCollector(), *this, algTag_, extTag_, l1t::UseEventSetupIn::Event);
-  isData_                   = iConfig.getParameter<bool>("isData");
 
 
   //------- JEC:: JEC config -------
@@ -49,6 +48,21 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   jecUncTxtFile_       =   iConfig.getParameter<std::string>("jecUncTxtFile");
   jecUncFallbackToTxt_ =   iConfig.getParameter<bool>("jecUncFallbackToTxt");
 
+
+  //------- JEC:: Data/MC based on isData 
+  jecTxtFilesData_ = iConfig.getParameter<std::vector<std::string>>("jecTxtFilesData");
+  jecTxtFilesMC_   = iConfig.getParameter<std::vector<std::string>>("jecTxtFilesMC");
+
+  jecResidualMapData_ = iConfig.getParameter<std::vector<std::string>>("jecResidualMapData");
+  jecResidualMapMC_   = iConfig.getParameter<std::vector<std::string>>("jecResidualMapMC");
+
+  jecUncTxtFileData_ = iConfig.getParameter<std::string>("jecUncTxtFileData");
+  jecUncTxtFileMC_   = iConfig.getParameter<std::string>("jecUncTxtFileMC");
+
+  jetVetoMapFilesData_ = iConfig.getParameter<std::vector<std::string>>("jetVetoMapFilesData");
+  jetVetoMapFilesMC_   = iConfig.getParameter<std::vector<std::string>>("jetVetoMapFilesMC");
+
+
   //------- JEC:: ES-mode Residual TXT fallback toggle -------
   jecResidualFallbackToTxt_ = iConfig.getParameter<bool>("jecResidualFallbackToTxt");
 
@@ -65,12 +79,17 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   printJECFirstNJets_  =   iConfig.getParameter<unsigned>("printJECFirstNJets");
 
   //------- JEC:: Build TXT corrector (file mode, no per-run residual)
-  if (applyJEC_ && jecMode_ == "txt" && !jecResidualByRun_) {
+  if (applyJEC_ && jecMode_ == "txt" && !jecResidualByRun_
+      && jecTxtFilesData_.empty() && jecTxtFilesMC_.empty()
+      && !jecTxtFiles_.empty()) {
     jecCorrector_ = jec::buildTxtCorrector(jecTxtFiles_, /*residual*/"");
   }
 
+
   // Pretty banner for TXT mode (no per-run residual)
-  if (applyJEC_ && jecMode_=="txt" && !jecResidualByRun_) {
+  if (applyJEC_ && jecMode_=="txt" && !jecResidualByRun_
+      && jecTxtFilesData_.empty() && jecTxtFilesMC_.empty()
+      && !jecTxtFiles_.empty()) {
     jec::log::print(jec::log::TxtConfig{
       jecMode_, jecPayload_, /*residual*/"", jecUncTxtFile_, jecLevels_, jecTxtFiles_
     });
@@ -132,6 +151,7 @@ void ScoutingTreeMakerRun3::beginJob()
   outTree_->SetAutoSave(0); //------- Stop ROOT from writing backup cycles
   outTree_->SetAutoFlush(-20*1024*1024);   // flush/optimize every ~20 MB
 
+  outTree_->Branch("isData"                ,&isData_             ,"isData_/I"             );
   outTree_->Branch("runNo"                 ,&run_                ,"run_/I"                );
   outTree_->Branch("evtNo"                 ,&evt_                ,"evt_/L"                );
   outTree_->Branch("lumi"                  ,&lumi_               ,"lumi_/I"               );
@@ -330,6 +350,51 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
   run_      =   iEvent.id().run();
   evt_      =   iEvent.id().event();
   lumi_     =   iEvent.id().luminosityBlock();
+  isData_   =   int(iEvent.isRealData());
+
+  // --- Pick the active input set once based on isData (first event)
+  if (!jecPickedByIsData_ && ( !jecTxtFilesData_.empty() || !jecTxtFilesMC_.empty() )) {
+    const bool wantData = (isData_ == 1);
+
+    // Adopt chosen block into the existing single members
+    jecTxtFiles_     = wantData ? jecTxtFilesData_     : jecTxtFilesMC_;
+    jecResidualMap_  = wantData ? jecResidualMapData_  : jecResidualMapMC_;
+    jecUncTxtFile_   = wantData ? jecUncTxtFileData_   : jecUncTxtFileMC_;
+    jetVetoMapFiles_ = wantData ? jetVetoMapFilesData_ : jetVetoMapFilesMC_;
+    jecResidualByRun_ = !jecResidualMap_.empty();
+
+    // If MC, *forbid* L2L3Residual regardless of what was in the list
+    if (!wantData) {
+      // Drop level from ES logic & logs
+      jecLevels_.erase(std::remove(jecLevels_.begin(), jecLevels_.end(), std::string("L2L3Residual")),
+                       jecLevels_.end());
+      // Disable any residual selection in TXT mode
+      jecResidualByRun_ = false;
+      jecResidualMap_.clear();
+    }
+
+    // Reset caches and (re)build once for TXT/no-residual mode
+    jecCorrector_.reset();
+    jecUnc_.reset();
+    jecResidualCurrent_.clear();
+    jecBannerKey_.clear();
+    vetoMapCurrentKey_.clear();
+
+    // If we're in TXT mode *without* per-run residuals, build the corrector now
+    if (applyJEC_ && jecMode_ == "txt" && !jecResidualByRun_) {
+      jecCorrector_ = jec::buildTxtCorrector(jecTxtFiles_, /*residual*/"");
+      // pretty banner for TXT
+      jec::log::print(jec::log::TxtConfig{
+        jecMode_, jecPayload_, /*residual*/"", jecUncTxtFile_, jecLevels_, jecTxtFiles_
+      });
+      if (applyJECUncertainty_) {
+        jecUnc_ = jec::buildUncertaintyFromTxt(jecUncTxtFile_);
+      }
+    }
+
+    jecPickedByIsData_ = true;
+  }
+
 
   //------- JetVeto: load/cycle map per run (no-op if disabled or no files)
   jetveto::ensureVetoMapReady(
@@ -613,6 +678,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
 
 void ScoutingTreeMakerRun3::initialize()
 {
+  isData_             = -999;
   run_                = -999;
   evt_                = -999;
   lumi_               = -999;
