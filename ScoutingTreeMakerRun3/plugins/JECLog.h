@@ -34,15 +34,12 @@ inline void print(const TxtConfig& c){
   std::ostringstream oss;
   oss << "\n**************************************************\n"
       << "TXT JEC configuration\n"
-      << "  Mode       : " << c.mode << "\n"
-      << "  Payload    : " << c.payload << "\n"
-      << "  Levels     : " << jec::joinLevels(c.levels) << "\n"
-      << "  Files:\n"
-      << "    - L1FastJet   : " << safe(pickByHint(c.txtFiles, "L1FastJet"))   << "\n"
-      << "    - L2Relative  : " << safe(pickByHint(c.txtFiles, "L2Relative"))  << "\n"
-      << "    - L3Absolute  : " << safe(pickByHint(c.txtFiles, "L3Absolute"))  << "\n"
-      << "    - L2L3Residual: " << (c.residual.empty()? "(none)" : c.residual) << "\n"
-      << "  Uncertainty     : " << safe(c.uncFile) << "\n"
+      << "  JEC Files:\n"
+      << "    - L1FastJet    : " << safe(pickByHint(c.txtFiles, "L1FastJet"))   << "\n"
+      << "    - L2Relative   : " << safe(pickByHint(c.txtFiles, "L2Relative"))  << "\n"
+      << "    - L3Absolute   : " << safe(pickByHint(c.txtFiles, "L3Absolute"))  << "\n"
+      << "    - L2L3Residual : " << (c.residual.empty()? "(none)" : c.residual) << "\n"
+      << "  Uncertainty      : " << safe(c.uncFile) << "\n"
       << "**************************************************";
   edm::LogVerbatim("JEC") << oss.str();
 }
@@ -51,11 +48,11 @@ inline void print(const EsConfig& c){
   std::ostringstream oss;
   oss << "\n##################################################\n"
       << "ES JEC configuration\n"
-      << "  Record     : JetCorrectionsRecord\n"
-      << "  Payload    : " << c.payload << "\n"
-      << "  Levels     : " << jec::joinLevels(c.levels) << "\n"
-      << "  Residuals  : " << c.residualSource << "\n"
-      << "  Uncertainty: "
+      << "  Record      : JetCorrectionsRecord\n"
+      << "  Payload     : " << c.payload << "\n"
+      << "  Requested   : " << jec::joinLevels(c.levels) << "\n"
+      << "  Residuals   : " << c.residualSource << "\n"
+      << "  Uncertainty : "
       << (c.hasUnc
             ? (c.usedTxtUncFallback ? "Loaded from txt fallback!" : "present in ES")
             : "NOT found in ES")
@@ -84,6 +81,36 @@ inline void printJet(unsigned printedIdx, int run, int lumi, long long evt,
       << " downFactor=" << std::max(0.f, 1.f - jes_rel)
       << std::defaultfloat;
   edm::LogVerbatim("JEC") << oss.str();
+}
+
+inline void maybePrintTxtBanner(std::string& bannerKey,
+                                const std::string& mode,
+                                const std::string& payload,
+                                const std::string& residualOrEmpty,
+                                const std::string& uncFile,
+                                const std::vector<std::string>& levels,
+                                const std::vector<std::string>& files)
+{
+  const std::string key = mode + "|" + payload + "|" + (residualOrEmpty.empty() ? "(none)" : residualOrEmpty);
+  if (key != bannerKey) {
+    print(TxtConfig{mode, payload, residualOrEmpty, uncFile, levels, files});
+    bannerKey = key;
+  }
+}
+
+inline void maybePrintEsBanner(std::string& bannerKey,
+                               const std::string& payload,
+                               const std::vector<std::string>& levels,
+                               bool hasUnc, bool usedTxtUnc,
+                               const std::string& residualSrc)
+{
+  const std::string key = std::string("es|") + payload
+                        + "|unc:" + (hasUnc ? (usedTxtUnc ? "txt" : "es") : "none")
+                        + "|res:" + residualSrc;
+  if (key != bannerKey) {
+    print(EsConfig{payload, levels, hasUnc, usedTxtUnc, residualSrc});
+    bannerKey = key;
+  }
 }
 
 }} // namespace jec::log

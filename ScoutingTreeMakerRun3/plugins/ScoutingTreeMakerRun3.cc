@@ -2,7 +2,7 @@
 //
 /*
 
- Description: Ntuple maker for Run3 scouting data set from the RAW/HLTSCOUT data-format
+ Description: Ntuple maker for Run3 scouting dataset from the RAW/HLTSCOUT data-format
 
 */
 
@@ -30,26 +30,26 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   l1GtUtils_                = new l1t::L1TGlobalUtil(iConfig, consumesCollector(), *this, algTag_, extTag_, l1t::UseEventSetupIn::Event);
 
 
-  //------- JEC:: JEC config -------
+  //----- JEC:: JEC config -------
   applyJEC_            =   iConfig.getParameter<bool>("applyJEC");
   jecMode_             =   iConfig.getParameter<std::string>("jecMode");
   jecPayload_          =   iConfig.getParameter<std::string>("jecPayload");
   jecLevels_           =   iConfig.getParameter<std::vector<std::string>>("jecLevels");
   jecTxtFiles_         =   iConfig.getParameter<std::vector<std::string>>("jecTxtFiles");
 
-  //------- JEC:: TXT-mode: per-run residual override
+  //----- JEC:: TXT-mode: per-run residual override
   jecResidualByRun_    =   iConfig.getParameter<bool>("jecResidualByRun");
   jecResidualMap_      =   iConfig.getParameter<std::vector<std::string>>("jecResidualMap");
   jecResidualCurrent_.clear();
 
 
-  //------- JEC:: JEC Uncertainty config -------
+  //----- JEC:: JEC Uncertainty config -------
   applyJECUncertainty_ =   iConfig.getParameter<bool>("applyJECUncertainty");
   jecUncTxtFile_       =   iConfig.getParameter<std::string>("jecUncTxtFile");
   jecUncFallbackToTxt_ =   iConfig.getParameter<bool>("jecUncFallbackToTxt");
 
 
-  //------- JEC:: Data/MC based on isData 
+  //----- JEC:: Data/MC based on isData 
   jecTxtFilesData_ = iConfig.getParameter<std::vector<std::string>>("jecTxtFilesData");
   jecTxtFilesMC_   = iConfig.getParameter<std::vector<std::string>>("jecTxtFilesMC");
 
@@ -63,30 +63,27 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   jetVetoMapFilesMC_   = iConfig.getParameter<std::vector<std::string>>("jetVetoMapFilesMC");
 
 
-  //------- JEC:: ES-mode Residual TXT fallback toggle -------
+  //----- JEC:: ES-mode Residual TXT fallback toggle -------
   jecResidualFallbackToTxt_ = iConfig.getParameter<bool>("jecResidualFallbackToTxt");
 
-  //------- Jet Veto Map config -------
+  //----- JEC:: Jet Veto Map config -------
   applyJetVetoMap_   = iConfig.getParameter<bool>("applyJetVetoMap");
   jetVetoMapFiles_   = iConfig.getParameter<std::vector<std::string>>("jetVetoMapFiles");
   vetoMapCurrentKey_.clear();
-
-  //------- Jet veto outputs
   jetVetoMapAK4_     = new std::vector<int>();
 
-  //------- JEC:: Printing controls
+  //----- JEC:: Printing controls
   printJECInfo_        =   iConfig.getParameter<bool>("printJECInfo");
   printJECFirstNJets_  =   iConfig.getParameter<unsigned>("printJECFirstNJets");
 
-  //------- JEC:: Build TXT corrector (file mode, no per-run residual)
+  //----- JEC:: Build TXT corrector (file mode, no per-run residual)
   if (applyJEC_ && jecMode_ == "txt" && !jecResidualByRun_
       && jecTxtFilesData_.empty() && jecTxtFilesMC_.empty()
       && !jecTxtFiles_.empty()) {
     jecCorrector_ = jec::buildTxtCorrector(jecTxtFiles_, /*residual*/"");
   }
 
-
-  // Pretty banner for TXT mode (no per-run residual)
+  //----- JEC:: Pretty banner for TXT mode
   if (applyJEC_ && jecMode_=="txt" && !jecResidualByRun_
       && jecTxtFilesData_.empty() && jecTxtFilesMC_.empty()
       && !jecTxtFiles_.empty()) {
@@ -95,18 +92,20 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
     });
   }
 
-  //------- JEC:: TXT-mode uncertainty (independent of per-run residual)
-  if (applyJECUncertainty_ && jecMode_ == "txt") {
+  //----- JEC:: TXT-mode uncertainty
+  if (applyJECUncertainty_ && jecMode_ == "txt"
+      && jecTxtFilesData_.empty() && jecTxtFilesMC_.empty()
+      && !jecUncTxtFile_.empty()) {
     jecUnc_ = jec::buildUncertaintyFromTxt(jecUncTxtFile_);
   }
 
-  //------- JEC:: Prepare ES token
+  //----- JEC:: Prepare ES token
   if (applyJEC_ && jecMode_ == "es") {
     jecESGetToken_ = esConsumes<JetCorrectorParametersCollection, JetCorrectionsRecord>(edm::ESInputTag("", jecPayload_));
   }
 
   
-  //------- Allocate the JEC factor vector
+  //----- Allocate the JEC factor vector
   jecFactorAK4_     = new vector<float>();
   jecRelUncAK4_     = new vector<float>();
   jecUpFactorAK4_   = new vector<float>();
@@ -117,7 +116,7 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   chEmFAK4_         = new vector<float>();
   neEmFAK4_         = new vector<float>();
 
-  //------- Allocate pointer members before use
+  //----- Allocate pointer members before use
   triggerResult_    = new vector<bool>();
   triggerName_      = new vector<string>();
 
@@ -137,7 +136,7 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   hfEmMultAK4_      = new vector<int>();
   jecLoggedOnce_    = false;
 
-} //------- Parameter Set End
+} //----- Parameter Set End
 
 
 void ScoutingTreeMakerRun3::beginJob() 
@@ -146,9 +145,9 @@ void ScoutingTreeMakerRun3::beginJob()
   triggerPassHisto_ = fs_->make<TH1F>("TriggerPass", "TriggerPass", 1, 0, 1);
   triggerPassHisto_->GetXaxis()->SetCanExtend(kTRUE);
 
-  //------- Form tree branches -------
+  //----- Form tree branches -------
   outTree_ = fs_->make<TTree>("events","events");
-  outTree_->SetAutoSave(0); //------- Stop ROOT from writing backup cycles
+  outTree_->SetAutoSave(0); //----- Stop ROOT from writing backup cycles
   outTree_->SetAutoFlush(-20*1024*1024);   // flush/optimize every ~20 MB
 
   outTree_->Branch("isData"                ,&isData_             ,"isData_/I"             );
@@ -160,7 +159,7 @@ void ScoutingTreeMakerRun3::beginJob()
   outTree_->Branch("met"                   ,&met_                ,"met_/F"                );
   outTree_->Branch("metphi"                ,&metphi_             ,"metphi_/F"             );
 
-  //------- Experimental MET Significance Branches
+  //----- Experimental MET Significance Branches
   outTree_->Branch("sumEt"                 ,&sumEt_              ,"sumEt_/F"              );
   outTree_->Branch("metSig"                ,&metSig_             ,"metSig_/F"             );
   outTree_->Branch("metOverSumEt"          ,&metOverSumEt_       ,"metOverSumEt_/F"       );
@@ -203,21 +202,21 @@ void ScoutingTreeMakerRun3::beginJob()
   outTree_->Branch("jetJECUpFactorAK4"     ,"vector<float>"      ,&jecUpFactorAK4_        );
   outTree_->Branch("jetJECDownFactorAK4"   ,"vector<float>"      ,&jecDownFactorAK4_      );
 
-  //------- Jet veto map products (no event filtering is applied)
+  //----- Jet veto map products (no event filtering is applied)
   outTree_->Branch("jetVetoMapAK4"         ,"vector<int>"        ,&jetVetoMapAK4_         );
   outTree_->Branch("nJetInVetoMap"         ,&nJetInVetoMap_      ,"nJetInVetoMap_/I"      );
 
-  //------- Calculated Charged and Neutral EM Energies and Fractions
+  //----- Calculated Charged and Neutral EM Energies and Fractions
   outTree_->Branch("jetChEmEAK4"           ,"vector<float>"      ,&chEmEAK4_              );
   outTree_->Branch("jetNeEmEAK4"           ,"vector<float>"      ,&neEmEAK4_              );
   outTree_->Branch("jetChEmFAK4"           ,"vector<float>"      ,&chEmFAK4_              );
   outTree_->Branch("jetNeEmFAK4"           ,"vector<float>"      ,&neEmFAK4_              );
 
-  //------- Trigger
+  //----- Trigger
   outTree_->Branch("triggerResult"         ,"vector<bool>"       ,&triggerResult_         );
   outTree_->Branch("triggerName"           ,"vector<string>"     ,&triggerName_           );
 
-} //------- beginJob End
+} //----- beginJob End
 
 
 
@@ -241,107 +240,6 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
   Handle<vector<Run3ScoutingVertex>> recVtxs;
   iEvent.getByToken(srcVrtx_, recVtxs);
 
-  //------- JEC:: TXT-mode: (re)build corrector with per-run Residual override
-  if (applyJEC_ && jecMode_ == "txt" && jecResidualByRun_) {
-    std::string residualKey;
-    const bool haveResidual = jec::pickResidualForRun(jecResidualMap_, iEvent.id().run(), residualKey);
-    const std::string cacheKey = haveResidual ? residualKey : std::string();
-    const bool mustBuild = (!jecCorrector_) || (jecResidualCurrent_ != cacheKey);
-
-    if (mustBuild) {
-      jecCorrector_ = jec::buildTxtCorrector(jecTxtFiles_, residualKey);
-      if (!jecCorrector_) {
-        throw cms::Exception("JEC")
-          << "TXT JEC build failed (run " << iEvent.id().run()
-          << "). Check jecTxtFiles/jecResidualMap.";
-      }
-      jecResidualCurrent_ = haveResidual ? residualKey : std::string();
-
-      // print only if this (mode|payload|residual) hasn't been printed yet
-      const std::string bannerKey =
-          jecMode_ + "|" + jecPayload_ + "|" + (haveResidual ? residualKey : "(none)");
-      if (bannerKey != jecBannerKey_) {
-        jec::log::print(jec::log::TxtConfig{
-          jecMode_, jecPayload_, (haveResidual ? residualKey : ""), jecUncTxtFile_, jecLevels_, jecTxtFiles_
-        });
-        jecBannerKey_ = bannerKey;
-      }
-    }
-  }
-  
-  //------- JEC:: Build/Rebuild the ES-corrector (optional Residual TXT fallback)
-  if (applyJEC_ && jecMode_ == "es") {
-    const auto& coll = iSetup.getData(jecESGetToken_);
-
-    // pick residual TXT for this run (if provided in the config map)
-    std::string residualKey;
-    const bool haveResidualTxt = jecResidualByRun_ && jec::pickResidualForRun(jecResidualMap_, iEvent.id().run(), residualKey);
-    const std::string cacheKey = haveResidualTxt ? residualKey : std::string();
-
-    // Rebuild if first time OR the chosen TXT residual changed (when fallback is enabled)
-    const bool mustBuild = (!jecCorrector_) || (jecResidualFallbackToTxt_ && (jecResidualCurrent_ != cacheKey));
-
-    if (mustBuild) {
-      bool usedTxtRes = false;
-      jecCorrector_ = jec::buildEsCorrectorWithOptionalTxtResidual(
-                        coll,
-                        jecLevels_,
-                        haveResidualTxt ? residualKey : std::string(),
-                        jecResidualFallbackToTxt_,
-                        usedTxtRes);
-
-      if (!jecCorrector_) {
-        throw cms::Exception("JEC") << "ES JEC build failed (payload=" << jecPayload_ << ").";
-      }
-      // cache the residual TXT (or empty when none)
-      jecResidualCurrent_ = cacheKey;
-    }
-  }
-
-  //------- JEC:: Build JES uncertainty in ES mode (ES first, optional TXT fallback)
-  static bool esUncUsedTxt = false; // remember the source so the banner can reflect it
-  if (applyJECUncertainty_ && jecMode_ == "es" && !jecUnc_) {
-    const auto& coll = iSetup.getData(jecESGetToken_);
-    bool usedTxt = false;
-    jecUnc_ = jec::buildUncertaintyEsWithOptionalTxtFallback(
-                coll, jecUncTxtFile_, jecUncFallbackToTxt_, usedTxt);
-
-    esUncUsedTxt = usedTxt;
-    if (!jecUnc_) {
-      edm::LogWarning("JEC") << "[JEC] Not found any unc in es or in txt file.";
-    }
-  }
-
-
-  // Pretty banner for ES mode (prints once per effective ES/Residual/Unc state)
-  if (jecMode_ == "es" && jecCorrector_) {
-    const auto& coll = iSetup.getData(jecESGetToken_);
-    const bool wantsResidual =
-        (std::find(jecLevels_.begin(), jecLevels_.end(), "L2L3Residual") != jecLevels_.end());
-
-    bool esHasResidual = false;
-    if (wantsResidual) {
-      try { (void)coll["L2L3Residual"]; esHasResidual = true; } catch (...) { esHasResidual = false; }
-    }
-
-    // If we wanted a residual but ES lacks it, and we have cached a TXT residual, report "txt"
-    const std::string resSrc = wantsResidual
-        ? (esHasResidual ? "es" : (jecResidualFallbackToTxt_ && !jecResidualCurrent_.empty() ? "txt" : "none"))
-        : "n/a";
-
-    const std::string bannerKey =
-        std::string("es|") + jecPayload_
-        + "|unc:" + (jecUnc_ ? (esUncUsedTxt ? "txt" : "es") : "none")
-        + "|res:" + resSrc;
-
-    if (bannerKey != jecBannerKey_) {
-      jec::log::print(jec::log::EsConfig{
-        jecPayload_, jecLevels_, bool(jecUnc_), esUncUsedTxt, resSrc
-      });
-      jecBannerKey_ = bannerKey;
-    }
-  }
-
   //-------------- Event Info -----------------------------------
   rho_      =   rhoHandle.isValid()     ?  static_cast<float>(*rhoHandle)    : -999.f;
   met_      =   metHandle.isValid()     ?  static_cast<float>(*metHandle)    : -999.f;
@@ -352,51 +250,126 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
   lumi_     =   iEvent.id().luminosityBlock();
   isData_   =   int(iEvent.isRealData());
 
-  // --- Pick the active input set once based on isData (first event)
+
+  //----- Pick once by isData and ensure TXT no-residual is prebuilt (affects FIRST event)
   if (!jecPickedByIsData_ && ( !jecTxtFilesData_.empty() || !jecTxtFilesMC_.empty() )) {
     const bool wantData = (isData_ == 1);
+    const auto sel = jec::pickInputsByIsDataAndMaybePrebuildTxt(
+        wantData, jecMode_, jecLevels_,
+        jecTxtFilesData_, jecTxtFilesMC_,
+        jecResidualMapData_, jecResidualMapMC_,
+        jecUncTxtFileData_, jecUncTxtFileMC_,
+        jetVetoMapFilesData_, jetVetoMapFilesMC_,
+        applyJEC_, applyJECUncertainty_,
+        jecCorrector_, jecUnc_, jecBannerKey_);
 
-    // Adopt chosen block into the existing single members
-    jecTxtFiles_     = wantData ? jecTxtFilesData_     : jecTxtFilesMC_;
-    jecResidualMap_  = wantData ? jecResidualMapData_  : jecResidualMapMC_;
-    jecUncTxtFile_   = wantData ? jecUncTxtFileData_   : jecUncTxtFileMC_;
-    jetVetoMapFiles_ = wantData ? jetVetoMapFilesData_ : jetVetoMapFilesMC_;
-    jecResidualByRun_ = !jecResidualMap_.empty();
-
-    // If MC, *forbid* L2L3Residual regardless of what was in the list
-    if (!wantData) {
-      // Drop level from ES logic & logs
-      jecLevels_.erase(std::remove(jecLevels_.begin(), jecLevels_.end(), std::string("L2L3Residual")),
-                       jecLevels_.end());
-      // Disable any residual selection in TXT mode
-      jecResidualByRun_ = false;
-      jecResidualMap_.clear();
-    }
-
-    // Reset caches and (re)build once for TXT/no-residual mode
-    jecCorrector_.reset();
-    jecUnc_.reset();
-    jecResidualCurrent_.clear();
-    jecBannerKey_.clear();
-    vetoMapCurrentKey_.clear();
-
-    // If we're in TXT mode *without* per-run residuals, build the corrector now
-    if (applyJEC_ && jecMode_ == "txt" && !jecResidualByRun_) {
-      jecCorrector_ = jec::buildTxtCorrector(jecTxtFiles_, /*residual*/"");
-      // pretty banner for TXT
-      jec::log::print(jec::log::TxtConfig{
-        jecMode_, jecPayload_, /*residual*/"", jecUncTxtFile_, jecLevels_, jecTxtFiles_
-      });
-      if (applyJECUncertainty_) {
-        jecUnc_ = jec::buildUncertaintyFromTxt(jecUncTxtFile_);
-      }
-    }
+    jecTxtFiles_      = sel.txtFiles;
+    jecResidualMap_   = sel.residualMap;
+    jecUncTxtFile_    = sel.uncTxtFile;
+    jetVetoMapFiles_  = sel.vetoMapFiles;
+    jecResidualByRun_ = sel.residualByRun;
 
     jecPickedByIsData_ = true;
+
+    //----- If TXT mode with no residuals, we pre-built above; print banner once.
+    if (applyJEC_ && jecMode_ == "txt" && !jecResidualByRun_) {
+      jec::log::maybePrintTxtBanner(jecBannerKey_,
+                                    jecMode_, jecPayload_,
+                                    /*residual*/"", jecUncTxtFile_,
+                                    jecLevels_, jecTxtFiles_);
+    }
   }
 
+  //----- Build JEC now that isData-dependent inputs are chosen (affects FIRST event)
+  if (applyJEC_) {
+    if (jecMode_ == "txt") {
+      if (jecResidualByRun_) {
+        //----- TXT mode WITH residuals: build for this run now
+        std::string residualKey;
+        const bool haveResidual = jec::pickResidualForRun(jecResidualMap_, run_, residualKey);
+        const std::string cacheKey = haveResidual ? residualKey : std::string();
+        const bool mustBuild = (!jecCorrector_) || (jecResidualCurrent_ != cacheKey);
 
-  //------- JetVeto: load/cycle map per run (no-op if disabled or no files)
+        if (mustBuild) {
+          jecCorrector_ = jec::buildTxtCorrector(jecTxtFiles_, residualKey);
+          if (!jecCorrector_) {
+            throw cms::Exception("JEC")
+              << "TXT JEC build failed (run " << run_ << "). Check jecTxtFiles/jecResidualMap.";
+          }
+          jecResidualCurrent_ = haveResidual ? residualKey : std::string();
+          jec::log::maybePrintTxtBanner(jecBannerKey_,
+                                        jecMode_, jecPayload_,
+                                        (haveResidual ? residualKey : ""), jecUncTxtFile_,
+                                        jecLevels_, jecTxtFiles_);
+          if (applyJECUncertainty_ && !jecUnc_) {
+            jecUnc_ = jec::buildUncertaintyFromTxt(jecUncTxtFile_);
+            if (!jecUnc_) {
+              edm::LogWarning("JEC") << "[JEC] Uncertainty TXT not found or empty: " << jecUncTxtFile_;
+            }
+          }
+        }
+      }
+    }
+    else if (jecMode_ == "es") {
+      //----- ES mode: build after dropping L2L3Residual for MC (if MC)
+      const auto& coll = iSetup.getData(jecESGetToken_);
+
+      //----- Only allow a TXT residual fallback when configured and (for DATA)
+      std::string residualKey;
+      const bool haveResidualTxt = jecResidualByRun_ && jec::pickResidualForRun(jecResidualMap_, run_, residualKey);
+      const std::string cacheKey = haveResidualTxt ? residualKey : std::string();
+
+      const bool mustBuild = (!jecCorrector_) || (jecResidualFallbackToTxt_ && (jecResidualCurrent_ != cacheKey));
+      if (mustBuild) {
+        bool usedTxtRes = false;
+        jecCorrector_ = jec::buildEsCorrectorWithOptionalTxtResidual(
+                          coll,
+                          jecLevels_,
+                          haveResidualTxt ? residualKey : std::string(),
+                          jecResidualFallbackToTxt_,
+                          usedTxtRes);
+        if (!jecCorrector_) {
+          throw cms::Exception("JEC") << "ES JEC build failed (payload=" << jecPayload_ << ").";
+        }
+        jecResidualCurrent_ = cacheKey;
+      }
+
+      //----- ES banner (post-pick, post-build)
+      const bool wantsResidual =
+          (std::find(jecLevels_.begin(), jecLevels_.end(), std::string("L2L3Residual")) != jecLevels_.end());
+      bool esHasResidual = false;
+      if (wantsResidual) {
+        try { (void)coll["L2L3Residual"]; esHasResidual = true; } catch (...) { esHasResidual = false; }
+      }
+
+      //----- Build unc if still missing; remember if TXT fallback was used
+      static bool esUncUsedTxt = false;
+      if (applyJECUncertainty_ && !jecUnc_) {
+        bool usedTxt = false;
+        jecUnc_ = jec::buildUncertaintyEsWithOptionalTxtFallback(coll, jecUncTxtFile_, jecUncFallbackToTxt_, usedTxt);
+        esUncUsedTxt = usedTxt;
+        if (!jecUnc_) {
+          edm::LogWarning("JEC") << "[JEC] Not found any unc in es or in txt file.";
+        }
+      }
+
+      const std::string resSrc = wantsResidual
+        ? (esHasResidual ? "es" : (jecResidualFallbackToTxt_ && !jecResidualCurrent_.empty() ? "txt" : "none"))
+        : "n/a";
+
+      // Print-once helper keeps logs tidy
+      jec::log::maybePrintEsBanner(
+        jecBannerKey_,
+        jecPayload_,
+        jecLevels_,
+        bool(jecUnc_),
+        esUncUsedTxt,
+        resSrc
+      );
+    }
+  }
+
+  //----- JetVeto: load/cycle map per run (no-op if 'disabled or no files')
   jetveto::ensureVetoMapReady(
       applyJetVetoMap_,
       jetVetoMapFiles_,
@@ -405,10 +378,10 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
       jetVetoMap_
   );
 
-  //------- SumET from PF-candidate pt (scouting has no stored sumEt)
-  //------- MET Significance = MET / std::sqrt(SumET)
-  //------- source: https://twiki.cern.ch/twiki/bin/view/CMSPublic/PhysicsResultsDP23010
-  //------- source: https://github.com/cms-sw/cmssw/blob/master/DataFormats/METReco/interface/MET.h#L57
+  //----- SumET from PF-candidate pt (scouting has no stored sumEt)
+  //----- MET Significance = MET / std::sqrt(SumET)
+  //----- source: https://twiki.cern.ch/twiki/bin/view/CMSPublic/PhysicsResultsDP23010
+  //----- source: https://github.com/cms-sw/cmssw/blob/master/DataFormats/METReco/interface/MET.h#L57
   double sumEt_val = -1.0;
   if (pfcandsH.isValid()) {
     double s = 0.0;
@@ -444,16 +417,16 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
 
           if(accept){ triggerPassHisto_->Fill(trigName.c_str(), 1); }
 
-        } //------- 
-      } //------- Selected trigger loop
-    } //------- All HLT loop
-  } //------- if hltresults valid
+        } //----- 
+      } //----- Selected trigger loop
+    } //----- All HLT loop
+  } //----- if hltresults valid
 
   //----- At least one good vertex requirement
   //if (recVtxs->size() > 0) {
 
-  //------- Proper sorting according to the PFJet pT values.
-  //------- Sort by *corrected* pT (so jet[0], jet[1] are leading/subleading after JEC)
+  //----- Proper sorting according to the PFJet pT values.
+  //----- Sort by *corrected* pT (so jet[0], jet[1] are leading/subleading after JEC)
   std::vector<float> jecCache(PFJets->size(), 1.f);
   std::vector<float> corrPt(PFJets->size(), 0.f);
 
@@ -461,37 +434,30 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     const auto& j = PFJets->at(i);
     TLorentzVector vRaw; vRaw.SetPtEtaPhiM(j.pt(), j.eta(), j.phi(), j.m());
 
-    float jec = 1.f;
-    if (applyJEC_ && jecCorrector_) {
-      jecCorrector_->setRho(std::max(0.f, rho_));
-      jecCorrector_->setJetA(j.jetArea());
-      jecCorrector_->setJetPt(j.pt());
-      jecCorrector_->setJetEta(j.eta());
-      jecCorrector_->setJetPhi(j.phi());
-      jecCorrector_->setJetE(vRaw.Energy());
-      if (nVtx_ >= 0) jecCorrector_->setNPV(nVtx_);
-      jec = jecCorrector_->getCorrection();
-    }
-
-    jecCache[i] = jec;           // <-- save it
-    corrPt[i]   = j.pt() * jec;  // <-- use it for sorting
+    const auto ev = jec::evaluate(
+      (applyJEC_ ? jecCorrector_.get() : nullptr),
+      nullptr, // no JES used for sorting
+      jec::CorrInput{rho_, j.jetArea(), j.pt(), j.eta(), j.phi(), float(vRaw.Energy()), nVtx_}
+    );
+    jecCache[i] = ev.jec;
+    corrPt[i]   = ev.pt_corr;
   }
 
 
-  // sort by corrected pT
+  //----- Sort by corrected pT
   std::vector<unsigned> sortedPFJetIdx(PFJets->size());
   std::iota(sortedPFJetIdx.begin(), sortedPFJetIdx.end(), 0u);
   std::sort(sortedPFJetIdx.begin(), sortedPFJetIdx.end(),
             [&](unsigned a, unsigned b){ return corrPt[a] > corrPt[b]; });
 
-  // build the list of jets that actually pass the corrected pT cut
+  //----- Build the list of jets that actually pass the corrected pT cut
   std::vector<unsigned> passIdx;
   passIdx.reserve(sortedPFJetIdx.size());
   for (auto i : sortedPFJetIdx) {
     if (corrPt[i] > ptMinPF_) passIdx.push_back(i);
   }
 
-  //------- Reserve capacity for all jet vectors once per event
+  //----- Reserve capacity for all jet vectors once per event
   const size_t nPass = passIdx.size();
   ptAK4_          ->reserve(nPass);   etaAK4_            ->reserve(nPass);    phiAK4_    ->reserve(nPass);
   massAK4_        ->reserve(nPass);   energyAK4_         ->reserve(nPass);    areaAK4_   ->reserve(nPass);
@@ -524,9 +490,11 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     TLorentzVector vP4Raw;
     vP4Raw.SetPtEtaPhiM(pt_raw, eta, phi, mass_raw);
     const double jet_energy_raw = vP4Raw.Energy();
+    //double jet_energy_raw = ijet->photonEnergy() + ijet->electronEnergy() + ijet->muonEnergy()
+    //                        + ijet->neutralHadronEnergy() + ijet->chargedHadronEnergy();
 
     //----- JEC factor
-    float jec = jecCache[idx];  // idx is the original PFJets index, e.g. sortedPFJetIdx[k]
+    float jec = jecCache[idx];  // idx is the original PFJets index
 
     //----- Corrected 4-vector for kinematics
     const float pt_corr   =  corrPt[idx];
@@ -544,12 +512,16 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     }
 
     //----- Debug: Print of what we actually applied
-    static unsigned jecPrintedJets = 0;
-    if (printJECInfo_ && jecPrintedJets < printJECFirstNJets_) {
-      ++jecPrintedJets;
-      jec::log::printJet(jecPrintedJets, run_, lumi_, evt_,
-                         eta, pt_raw, ijet.jetArea(), std::max(0.f, rho_),
-                         jec, pt_corr, jes_unc_rel);
+    const auto ev = jec::evaluate(
+      (applyJEC_ ? jecCorrector_.get() : nullptr),
+      (applyJECUncertainty_ ? jecUnc_.get() : nullptr),
+      jec::CorrInput{rho_, ijet.jetArea(), pt_raw, eta, phi, float(jet_energy), nVtx_}
+    );
+
+    if (printJECInfo_ && printedJets_ < printJECFirstNJets_) {
+      jec::log::printJet(++printedJets_, run_, lumi_, evt_,
+                         eta, pt_raw, ijet.jetArea(), rho_,
+                         ev.jec, ev.pt_corr, ev.jes_rel);
     }
 
     //----- JETID
@@ -583,11 +555,11 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     int hfHadMult     =   ijet.HFHadronMultiplicity();
     int hfEmMult      =   ijet.HFEMMultiplicity();
 
-    //------- https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID
+    //----- https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID
     int idL = (chEF>0.01 && chHadMult>1 && nhEF<0.99 && npr>1 && muEF<0.80 && (neEmF+chEmF) < 0.90);
     int idT = (chEF>0.01 && chHadMult>1 && nhEF<0.90 && npr>1 && muEF<0.80 && neEmF < 0.90 && chEmF < 0.80);
 
-    //--- flag eta–phi in veto map (1=vetoed, 0=ok). No filtering here; only store flags.
+    //----- Flag eta–phi in veto map (1=vetoed, 0=ok). No filtering here; only store flags.
     int inVeto = jetveto::flagFromMap(jetVetoMap_.get(), eta, phi);
 
     htAK4 += pt_corr;
@@ -628,18 +600,18 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     jetVetoMapAK4_     ->push_back(inVeto);
 
 
-  } //------- Jet loop
+  } //----- Jet loop
 
   nJetInVetoMap_     =  vetoCount;
   nPFJets_           =  static_cast<int>(ptAK4_->size());
   htAK4_             =  htAK4;
   unclusteredEnFrac_ =  (sumEt_>0.f)  ?  ((sumEt_ - htAK4_) / sumEt_) : -1.0f;
 
-  //------- Fake-MET detection:
-  //------- Compute min DeltaPhi between MET and the leading (up to N=2 and N=4) jets.
-  //------- Small minDeltaPhi => MET aligned with a hard jet => likely mis-measurement/noise rather than genuine MET.
-  //------- N=4 to catch ISR/FSR; N=2 for a stricter pure-dijet selection.
-  //------- Sets -1 if undefined (e.g. no jets or invalid MET).
+  //----- Fake-MET detection:
+  //----- Compute min DeltaPhi between MET and the leading (up to N=2 and N=4) jets.
+  //----- Small minDeltaPhi => MET aligned with a hard jet => likely mis-measurement/noise rather than genuine MET.
+  //----- N=4 to catch ISR/FSR; N=2 for a stricter pure-dijet selection.
+  //----- Sets -1 if undefined (e.g. no jets or invalid MET).
   float v2 = std::numeric_limits<float>::infinity();
   float v4 = std::numeric_limits<float>::infinity();
 
@@ -652,12 +624,12 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     }
   }
 
-  //------- If no valid jets/MET 'minDPhi = -1'
+  //----- If no valid jets/MET 'minDPhi = -1'
   minDPhiMetJet2_ = std::isfinite(v2) ? v2 : -1.f;
   minDPhiMetJet4_ = std::isfinite(v4) ? v4 : -1.f;
 
   if (ptAK4_->size() > 1) {
-    // find indices of the top-2 jets by *corrected* pT
+    //----- Find indices of the top-2 jets by *corrected* pT
     TLorentzVector j1, j2;
     j1.SetPtEtaPhiM((*ptAK4_)[0], (*etaAK4_)[0], (*phiAK4_)[0], (*massAK4_)[0]);
     j2.SetPtEtaPhiM((*ptAK4_)[1], (*etaAK4_)[1], (*phiAK4_)[1], (*massAK4_)[1]);
@@ -667,13 +639,13 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     dPhijjAK4_ = std::fabs(j1.DeltaPhi(j2));
   }
 
-  // } //------- vtx requirement end
+  // } //----- vtx requirement end
   
-  //---- Fill Tree ---
+  //----- Fill Tree ---
   outTree_->Fill();     
   //------------------
 
-} // analyze End - Event Loop
+} //----- analyze End - Event Loop
 
 
 void ScoutingTreeMakerRun3::initialize()

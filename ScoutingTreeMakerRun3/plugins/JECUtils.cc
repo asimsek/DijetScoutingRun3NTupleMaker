@@ -62,6 +62,55 @@ namespace jec {
     return std::make_unique<FactorizedJetCorrector>(pars);
     }
 
+    FirstEventSelection
+    pickInputsByIsDataAndMaybePrebuildTxt(bool wantData,
+                                          const std::string& jecMode,
+                                          std::vector<std::string>& levels /*in/out*/,
+                                          const std::vector<std::string>& dataTxt,
+                                          const std::vector<std::string>& mcTxt,
+                                          const std::vector<std::string>& dataRes,
+                                          const std::vector<std::string>& mcRes,
+                                          const std::string& dataUnc,
+                                          const std::string& mcUnc,
+                                          const std::vector<std::string>& dataVeto,
+                                          const std::vector<std::string>& mcVeto,
+                                          bool applyJEC, bool applyJECUnc,
+                                          std::unique_ptr<FactorizedJetCorrector>& corr,
+                                          std::unique_ptr<JetCorrectionUncertainty>& unc,
+                                          std::string& bannerKey)
+    {
+      FirstEventSelection out;
+      // adopt chosen block
+      out.txtFiles     = wantData ? dataTxt  : mcTxt;
+      out.residualMap  = wantData ? dataRes  : mcRes;
+      out.uncTxtFile   = wantData ? dataUnc  : mcUnc;
+      out.vetoMapFiles = wantData ? dataVeto : mcVeto;
+      out.residualByRun = !out.residualMap.empty();
+
+      // MC: *forbid* residual usage (drop from levels & maps)
+      if (!wantData) {
+        levels.erase(std::remove(levels.begin(), levels.end(), std::string("L2L3Residual")),
+                     levels.end());
+        out.residualByRun = false;
+        out.residualMap.clear();
+      }
+
+      // reset state owned by caller
+      corr.reset();
+      unc.reset();
+      bannerKey.clear();
+
+      // TXT mode without per-run residuals -> build once here (so event #1 has JEC)
+      if (applyJEC && jecMode == "txt" && !out.residualByRun) {
+        corr = jec::buildTxtCorrector(out.txtFiles, /*residual*/"");
+        if (applyJECUnc) {
+          unc = jec::buildUncertaintyFromTxt(out.uncTxtFile);
+        }
+      }
+      return out;
+    }
+
+
     std::unique_ptr<FactorizedJetCorrector>
     buildEsCorrectorWithOptionalTxtResidual(const JetCorrectorParametersCollection& coll,
                                             const std::vector<std::string>& levels,

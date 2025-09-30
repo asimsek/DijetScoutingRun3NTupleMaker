@@ -71,21 +71,23 @@ voms-proxy-init --voms cms --valid 192:00
 
 ### Run3 QCD MC Samples
 
-| <sup><sub>QCD Samples (Run3Winter22 MiniAOD)</sub></sup>| <sup><sub>cross section (xsec)</sub></sup>|
+| <sup><sub>QCD Samples (RunIII2024Summer24 AODSIM)</sub></sup>| <sup><sub>cross section (xsec)</sub></sup>|
 |--|--|
-| <sup><sub>/QCD_PT-50to80_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>16760000</sub></sup> |
-| <sup><sub>/QCD_PT-80to120_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>2534000</sub></sup> |
-| <sup><sub>/QCD_PT-120to170_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>445800</sub></sup> |
-| <sup><sub>/QCD_PT-170to300_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>113700</sub></sup> |
-| <sup><sub>/QCD_PT-300to470_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>7559</sub></sup> |
-| <sup><sub>/QCD_PT-470to600_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>626.4</sub></sup> |
-| <sup><sub>/QCD_PT-600to800_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>178.6</sub></sup> |
-| <sup><sub>/QCD_PT-800to1000_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>30.57</sub></sup> |
-| <sup><sub>/QCD_PT-1000to1400_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>8.92</sub></sup> |
-| <sup><sub>/QCD_PT-1400to1800_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>0.8103</sub></sup> |
-| <sup><sub>/QCD_PT-1800to2400_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>0.1148</sub></sup> |
-| <sup><sub>/QCD_PT-2400to3200_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>0.007542</sub></sup> |
-| <sup><sub>/QCD_PT-3200_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM</sub></sup> | <sup><sub>0.0002331</sub></sup> |
+| <sup><sub>/QCD_Bin-PT-50to80_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24DRPremix-140X_mcRun3_2024_realistic_v26-v2/AODSIM</sub></sup> | <sup><sub>16730000</sub></sup> |
+| <sup><sub>/QCD_Bin-PT-80to120_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24DRPremix-140X_mcRun3_2024_realistic_v26-v2/AODSIM</sub></sup> | <sup><sub>2506000</sub></sup> |
+| <sup><sub>/QCD_Bin-PT-120to170_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24DRPremix-140X_mcRun3_2024_realistic_v26-v2/AODSIM</sub></sup> | <sup><sub>439800</sub></sup> |
+| <sup><sub>/QCD_Bin-PT-170to300_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24DRPremix-140X_mcRun3_2024_realistic_v26-v2/AODSIM</sub></sup> | <sup><sub>113300</sub></sup> |
+| <sup><sub>/QCD_Bin-PT-300to470_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24DRPremix-140X_mcRun3_2024_realistic_v26-v2/AODSIM</sub></sup> | <sup><sub>7581</sub></sup> |
+| <sup><sub>/QCD_Bin-PT-470to600_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24DRPremix-140X_mcRun3_2024_realistic_v26-v2/AODSIM</sub></sup> | <sup><sub>623.3</sub></sup> |
+| <sup><sub>/QCD_Bin-PT-600to800_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24DRPremix-140X_mcRun3_2024_realistic_v26-v2/AODSIM</sub></sup> | <sup><sub>178.7</sub></sup> |
+| <sup><sub>/QCD_Bin-PT-800to1000_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24DRPremix-140X_mcRun3_2024_realistic_v26-v2/AODSIM</sub></sup> | <sup><sub>30.62</sub></sup> |
+| <sup><sub>/QCD_Bin-PT-1000to1500_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24DRPremix-140X_mcRun3_2024_realistic_v26-v2/AODSIM</sub></sup> | <sup><sub>9.306</sub></sup> |
+| <sup><sub>/QCD_Bin-PT-1500to2000_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24DRPremix-140X_mcRun3_2024_realistic_v26-v2/AODSIM</sub></sup> | <sup><sub>0.5015</sub></sup> |
+| <sup><sub>/QCD_Bin-PT-2000to2500_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24DRPremix-140X_mcRun3_2024_realistic_v26-v2/AODSIM</sub></sup> | <sup><sub>0.04264</sub></sup> |
+| <sup><sub>/QCD_Bin-PT-2500to3000_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24DRPremix-140X_mcRun3_2024_realistic_v26-v2/AODSIM</sub></sup> | <sup><sub>0.004454</sub></sup> |
+| <sup><sub>/QCD_Bin-PT-3000_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24DRPremix-140X_mcRun3_2024_realistic_v26-v2/AODSIM</sub></sup> | <sup><sub>0.0005539</sub></sup> |
+
+
 
 
 > [!NOTE]
@@ -128,6 +130,24 @@ voms-proxy-init --voms cms --valid 192:00
 ```
 ./utils/dasgoclient --query='dataset dataset=/QCD_*PT-*0_TuneCP5_13p6TeV_pythia8/Run*Summer*/AODSIM'
 ```
+
+
+
+#### Run3 Signal Samples
+
+```
+./utils/dasgoclient --query='dataset dataset=/RSGravitonToQuarkQuark*kMpl*/Run*Summer2*/AODSIM'
+```
+
+```
+./utils/dasgoclient --query='dataset dataset=/RSGravitonTo2G_kMpl-001*/Run*Summer2*/AODSIM'
+./utils/dasgoclient --query='dataset dataset=/RSGravitonToGluonGluon_kMpl*_TuneCP5_13p6TeV_pythia8/Run*Summer2*/AODSIM'
+```
+
+```
+./utils/dasgoclient --query='dataset dataset=/Qstarto2J*/Run*Summer2*/AODSIM'
+```
+
 
 
 ## Extras
@@ -211,6 +231,12 @@ ls $CMSSW_RELEASE_BASE/bin/$SCRAM_ARCH/edm*
 ```
 ./utils/check_dataset_completeness /QCD_PT-*0_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM --check-files
 ```
+
+```
+./utils/check_dataset_completeness /Qstarto2J_M-*_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM
+
+```
+
 
 > [!TIP]
 > Input list is also supported with the `--input <yourList>` argument. <br>

@@ -47,6 +47,7 @@ process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
         'root://cms-xrd-global.cern.ch//store/data/Run2025C/ScoutingPFRun3/HLTSCOUT/v1/000/392/925/00000/b95d5cc9-62b2-4b3b-a0f9-d0d79b52a85d.root'
         #'root://cms-xrd-global.cern.ch//store/mc/RunIII2024Summer24DRPremix/QCD_Bin-PT-50to80_TuneCP5_13p6TeV_pythia8/AODSIM/140X_mcRun3_2024_realistic_v26-v2/120000/005210b9-bf51-4f56-be43-814a093fc0af.root'
+        #'root://cms-xrd-global.cern.ch//store/mc/RunIII2024Summer24DRPremix/RSGravitonTo2G_kMpl-001_M-450_TuneCP5_13p6TeV_pythia8/AODSIM/140X_mcRun3_2024_realistic_v26-v2/2530000/0bf5c319-aa53-4d83-bd9b-0bb4fbc3446d.root'
     )
 )
 
@@ -136,7 +137,7 @@ process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
                             jecUncFallbackToTxt      =  cms.bool(True),          # ES-mode uncertainty fallback control
                             jecResidualFallbackToTxt =  cms.bool(True),          # ES-mode residual (L2L3Residual) TXT fallback control
                             jecMode                  =  cms.string(jecMode_),
-                            jecPayload               =  cms.string("AK8PFHLT"),  # e.g. 'AK4PFHLT' or 'AK8PFHLT' `conddb list <YourGlobalTag> | grep JetCorrectionsRecord`
+                            jecPayload               =  cms.string("AK4PFHLT"),  # e.g. 'AK4PFHLT' or 'AK8PFHLT' `conddb list <YourGlobalTag> | grep JetCorrectionsRecord`
                             jecLevels                =  cms.vstring("L1FastJet","L2Relative","L3Absolute","L2L3Residual"),
 
                             # --- Provide both sources; C++ will choose once based on 'isData'
@@ -150,13 +151,15 @@ process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
                             jecUncTxtFileMC          =  cms.string(unc_file_mc),
                             jetVetoMapFilesMC        =  cms.vstring(vetomap_files_mc),
 
-                            # Keep the original single-set params as empty; c++ script fills them after it picks
+                            # --- Keep the original single-set params as empty; c++ script fills them after it picks
+                            # --- DON'T CHANGE ANYTHING HERE --- #
                             jecTxtFiles              =  cms.vstring(),
                             jecResidualByRun         =  cms.bool(False),
                             jecResidualMap           =  cms.vstring(),
                             applyJECUncertainty      =  cms.bool(True),
                             jecUncTxtFile            =  cms.string(""),
                             jetVetoMapFiles          =  cms.vstring(),
+                            # ---------------------------------- #
 
                             # --- Print controls (for ES/TXT alike)
                             printJECInfo             =  cms.bool(True),    # set True to print

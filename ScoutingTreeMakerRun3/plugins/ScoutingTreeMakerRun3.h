@@ -211,6 +211,7 @@ class ScoutingTreeMakerRun3 : public edm::one::EDAnalyzer<>
     std::vector<float> *jecUpFactorAK4_;         // 1 + unc
     std::vector<float> *jecDownFactorAK4_;       // 1 - unc
     bool jecLoggedOnce_;
+    unsigned printedJets_ = 0;
     std::string jecBannerKey_;                   // remembers last printed (mode|payload|residual)
 
 };

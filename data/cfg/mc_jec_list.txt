@@ -1,39 +1,12 @@
-#---- Year: 2024C:
+#---- Year: 2024:
 L1FastJet: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Run3_V1_MC/Winter24Run3_V1_MC_L1FastJet_AK4PFPuppi.txt
 L2Relative: DijetScoutingRun3NTupleMaker/data/jec/2024/RunIII2024Summer24_V2_MC_L2Relative_AK4PUPPI.txt
 L3Absolute: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Run3_V1_MC/Winter24Run3_V1_MC_L3Absolute_AK4PFPuppi.txt
 Unc: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Prompt24_V1_MC_Uncertainty_AK4PFPuppi.txt
 JetVetoMap: [ -1:-1:DijetScoutingRun3NTupleMaker/data/jetvetomap/jetvetomaps_2024BCDEFGHI.json ]
 
-#---- Year: 2024F:
-L1FastJet: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Run3_V1_MC/Winter24Run3_V1_MC_L1FastJet_AK4PFPuppi.txt
-L2Relative: DijetScoutingRun3NTupleMaker/data/jec/2024/RunIII2024Summer24_V2_MC_L2Relative_AK4PUPPI.txt
-L3Absolute: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Run3_V1_MC/Winter24Run3_V1_MC_L3Absolute_AK4PFPuppi.txt
-Unc: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Prompt24_V1_MC_Uncertainty_AK4PFPuppi.txt
-JetVetoMap: [ -1:-1:DijetScoutingRun3NTupleMaker/data/jetvetomap/jetvetomaps_2024BCDEFGHI.json ]
 
-#---- Year: 2024G:
-L1FastJet: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Run3_V1_MC/Winter24Run3_V1_MC_L1FastJet_AK4PFPuppi.txt
-L2Relative: DijetScoutingRun3NTupleMaker/data/jec/2024/RunIII2024Summer24_V2_MC_L2Relative_AK4PUPPI.txt
-L3Absolute: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Run3_V1_MC/Winter24Run3_V1_MC_L3Absolute_AK4PFPuppi.txt
-Unc: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Prompt24_V1_MC_Uncertainty_AK4PFPuppi.txt
-JetVetoMap: [ -1:-1:DijetScoutingRun3NTupleMaker/data/jetvetomap/jetvetomaps_2024BCDEFGHI.json ]
-
-#---- Year: 2024H:
-L1FastJet: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Run3_V1_MC/Winter24Run3_V1_MC_L1FastJet_AK4PFPuppi.txt
-L2Relative: DijetScoutingRun3NTupleMaker/data/jec/2024/RunIII2024Summer24_V2_MC_L2Relative_AK4PUPPI.txt
-L3Absolute: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Run3_V1_MC/Winter24Run3_V1_MC_L3Absolute_AK4PFPuppi.txt
-Unc: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Prompt24_V1_MC_Uncertainty_AK4PFPuppi.txt
-JetVetoMap: [ -1:-1:DijetScoutingRun3NTupleMaker/data/jetvetomap/jetvetomaps_2024BCDEFGHI.json ]
-
-#---- Year: 2024I:
-L1FastJet: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Run3_V1_MC/Winter24Run3_V1_MC_L1FastJet_AK4PFPuppi.txt
-L2Relative: DijetScoutingRun3NTupleMaker/data/jec/2024/RunIII2024Summer24_V2_MC_L2Relative_AK4PUPPI.txt
-L3Absolute: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Run3_V1_MC/Winter24Run3_V1_MC_L3Absolute_AK4PFPuppi.txt
-Unc: DijetScoutingRun3NTupleMaker/data/jec/2024/Winter24Prompt24_V1_MC_Uncertainty_AK4PFPuppi.txt
-JetVetoMap: [ -1:-1:DijetScoutingRun3NTupleMaker/data/jetvetomap/jetvetomaps_2024BCDEFGHI.json ]
-
-#---- Year: 2025C:
+#---- Year: 2025:
 L1FastJet: DijetScoutingRun3NTupleMaker/data/jec/2025/Winter25Prompt25_V2_MC/Winter24Prompt24_V2_MC_L1FastJet_AK4PFPuppi.txt
 L2Relative: DijetScoutingRun3NTupleMaker/data/jec/2025/Winter25Prompt25_V2_MC/Winter24Prompt24_V2_MC_L2Relative_AK4PFPuppi.txt
 L3Absolute: DijetScoutingRun3NTupleMaker/data/jec/2025/Winter25Prompt25_V2_MC/Winter24Prompt24_V2_MC_L3Absolute_AK4PFPuppi.txt
