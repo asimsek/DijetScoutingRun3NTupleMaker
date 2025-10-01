@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 import os, re
 
 # --- year/era for JECs
-era_     = '2024H'
+era_     = '2025C'
 jecMode_ = 'txt' # 'es'| 'txt' | 'none' 
 doJetVetoMap = True
 
@@ -38,7 +38,7 @@ process.MessageLogger.cerr.default = cms.untracked.PSet(limit=cms.untracked.int3
 process.MessageLogger.cerr.JEC = cms.untracked.PSet(limit = cms.untracked.int32(1000000000))
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(5000)
+    input = cms.untracked.int32(-1)
 )
 
 
@@ -46,8 +46,9 @@ process.maxEvents = cms.untracked.PSet(
 #------ Note: For grid operation, the provided input below is irrelevant as input data is managed independently within the grid system (e.g., CRAB).
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        #'root://cms-xrd-global.cern.ch//store/data/Run2025C/ScoutingPFRun3/HLTSCOUT/v1/000/392/925/00000/b95d5cc9-62b2-4b3b-a0f9-d0d79b52a85d.root' ## 2025C
-        'root://cms-xrd-global.cern.ch//store/data/Run2024H/ScoutingPFRun3/HLTSCOUT/v1/000/385/836/00000/003ca643-43f8-40dd-92b3-4c6a4ccdc894.root' ## 2024H
+        'root://cms-xrd-global.cern.ch//store/data/Run2025C/ScoutingPFRun3/HLTSCOUT/v1/000/392/925/00000/b95d5cc9-62b2-4b3b-a0f9-d0d79b52a85d.root' ## 2025C
+        #'root://cms-xrd-global.cern.ch//store/data/Run2024H/ScoutingPFRun3/HLTSCOUT/v1/000/385/836/00000/003ca643-43f8-40dd-92b3-4c6a4ccdc894.root' ## 2024H
+        #'root://cms-xrd-global.cern.ch//store/data/Run2024I/ScoutingPFMonitor/RAW/v1/000/386/478/00000/07e75911-a7bc-4ac2-be24-323d49b07ba0.root', ## 2024H ScoutingPFMonitor
         #'root://cms-xrd-global.cern.ch//store/mc/RunIII2024Summer24DRPremix/QCD_Bin-PT-50to80_TuneCP5_13p6TeV_pythia8/AODSIM/140X_mcRun3_2024_realistic_v26-v2/120000/005210b9-bf51-4f56-be43-814a093fc0af.root'
         #'root://cms-xrd-global.cern.ch//store/mc/RunIII2024Summer24DRPremix/RSGravitonTo2G_kMpl-001_M-450_TuneCP5_13p6TeV_pythia8/AODSIM/140X_mcRun3_2024_realistic_v26-v2/2530000/0bf5c319-aa53-4d83-bd9b-0bb4fbc3446d.root'
     )
