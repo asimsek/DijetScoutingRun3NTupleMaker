@@ -286,6 +286,13 @@ xrdcp root://cms-xrd-global.cern.ch//store/data/Run2025C/ScoutingPFRun3/HLTSCOUT
 
 
 
+### 8) Find Global Tag info with edmProvDump
+
+```
+edmProvDump root://cms-xrd-global.cern.ch//store/data/Run2025C/ScoutingPFRun3/HLTSCOUT/v1/000/392/925/00000/b95d5cc9-62b2-4b3b-a0f9-d0d79b52a85d.root | grep 'globaltag'
+```
+
+
 ## Useful Links
 
  + [Run3 Luminosity and uncertainty recommendations](https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3)
