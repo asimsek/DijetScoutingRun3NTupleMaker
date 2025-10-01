@@ -110,7 +110,7 @@ class ScoutingTreeMakerRun3 : public edm::one::EDAnalyzer<>
 
   private:
     void initialize();
-    //---- configurable parameters --------   
+    // --- Configurable parameters --------   
     double ptMinPF_;
     bool isData_;
 
@@ -123,7 +123,7 @@ class ScoutingTreeMakerRun3 : public edm::one::EDAnalyzer<>
     std::vector<std::string> jecTxtFiles_; // txt paths when jecMode_ == "txt"
 
 
-    // Candidate inputs from Python; script picks the right one on the first event via isData
+    // --- Candidate inputs from Python; script picks the right one on the first event via isData
     std::vector<std::string> jecTxtFilesData_, jecTxtFilesMC_;
     std::vector<std::string> jecResidualMapData_, jecResidualMapMC_;
     std::string              jecUncTxtFileData_,  jecUncTxtFileMC_;
@@ -148,10 +148,10 @@ class ScoutingTreeMakerRun3 : public edm::one::EDAnalyzer<>
     bool     printJECInfo_;          // print ES/JEC info and a few per-jet lines
     unsigned printJECFirstNJets_;    // print at most this many jets across the job
 
-    // Corrector built either from ES params (on first event) or from txt files (in ctor)
+    // --- Corrector built either from ES params (on first event) or from txt files (in ctor)
     std::unique_ptr<FactorizedJetCorrector> jecCorrector_;
 
-    // ES token (only used if jecMode_ == "es")
+    // --- ES token (only used if jecMode_ == "es")
     edm::ESGetToken<JetCorrectorParametersCollection, JetCorrectionsRecord> jecESGetToken_;
 
 
@@ -172,21 +172,29 @@ class ScoutingTreeMakerRun3 : public edm::one::EDAnalyzer<>
     edm::Service<TFileService> fs_;
     TTree *outTree_;
 
-    //---- TRIGGER -------------------------
-    std::vector<std::string> vtriggerSelection_;
-    TH1F *triggerPassHisto_, *triggerNamesHisto_;
-    //---- output TREE variables ------
-    //---- global event variables -----
+    // --- global event variables -----
     int   run_,nVtx_,lumi_;
     long int evt_;
     int   nPFJets_;
     float rho_, met_, metphi_, minDPhiMetJet2_, minDPhiMetJet4_;
     float sumEt_, metSig_, metOverSumEt_, unclusteredEnFrac_;
     float htAK4_, mjjAK4_, dEtajjAK4_, dPhijjAK4_;
+
+    // --- TRIGGER ---
+    std::vector<std::string> vtriggerSelection_;
+    std::vector<std::string> l1Seeds_;
+    TH1F *triggerPassHisto_, *triggerNamesHisto_;
+
+    // --- HLT ---
     std::vector<bool> *triggerResult_;
     std::vector<std::string> *triggerName_;
 
-    //---- jet and genJet variables --------------
+    // --- L1 ---
+    bool doL1_;
+    std::vector<bool> *l1Result_;
+    std::vector<std::string> *l1Name_;
+
+    // --- jet and genJet variables ---
     std::vector<float> *ptAK4_, *rawPtAK4_, *etaAK4_, *phiAK4_, *massAK4_, *energyAK4_, *areaAK4_, *chfAK4_, *nhfAK4_, *phfAK4_, *elfAK4_, *mufAK4_;
     std::vector<int> *idLAK4_, *idTAK4_, *chHadMultAK4_, *neHadMultAK4_, *phoMultAK4_;
     std::vector<int> *elMultAK4_, *muMultAK4_, *hfHadMultAK4_, *hfEmMultAK4_;

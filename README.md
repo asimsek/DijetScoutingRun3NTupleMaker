@@ -33,12 +33,26 @@ cd DijetScoutingRun3
 scram b clean; scram b -j 8
 ```
 
+
+### Run nTuple maker locally
+
 > [!IMPORTANT]
 > An active proxy is required to access and process CMS data.
 
 ```
 voms-proxy-init --voms cms --valid 192:00
 ```
+
+
+> [!WARNING]
+> Please ensure that the correct era, globalTag, and input-root-file is used in the `ScoutingTreeMakerRun3/python/ScoutingTreeMakerRun3.py` script. <br>
+> Also, ensure that the JEC paths are properly specified in the `data/cfg/data_jec_list.txt` (or `mc_jec_list`) file.
+
+
+```
+cmsRun ScoutingTreeMakerRun3/python/ScoutingTreeMakerRun3.py
+```
+
 
 
 ## Datasets
@@ -226,7 +240,7 @@ ls $CMSSW_RELEASE_BASE/bin/$SCRAM_ARCH/edm*
 ```
 
 
-### 6) Check dataset availability on sites:
+### 6) Check dataset availability on sites
 
 ```
 ./utils/check_dataset_completeness /QCD_PT-*0_TuneCP5_13p6TeV_pythia8/Run3Summer22DRPremix-124X_mcRun3_2022_realistic_v12-v2/AODSIM --check-files
@@ -237,12 +251,39 @@ ls $CMSSW_RELEASE_BASE/bin/$SCRAM_ARCH/edm*
 
 ```
 
-
 > [!TIP]
 > Input list is also supported with the `--input <yourList>` argument. <br>
 > Only show sites where dataset presence is 100% (`--full_presence`). <br>
 > Use `--include-tapes` to show **TAPE** information alongside **DISK** details.
 > The use of wildcard (`*`) in the dataset argument is supported.
+
+
+
+### 7) XRootD (XRD) Commands
+
+#### XRDFS:: Root file size (if not availble on the given EOS path):
+
+```
+xrdfs root://cms-xrd-global.cern.ch stat /store/data/Run2025C/ScoutingPFRun3/HLTSCOUT/v1/000/392/925/00000/b95d5cc9-62b2-4b3b-a0f9-d0d79b52a85d.root | awk '/Size/{print $2}' | numfmt --to=iec
+dasgoclient -query='file file=/store/data/Run2025C/ScoutingPFRun3/HLTSCOUT/v1/000/392/925/00000/b95d5cc9-62b2-4b3b-a0f9-d0d79b52a85d.root | grep file.size'
+```
+
+> [!TIP]
+> The output of the `xrdfs` command provides the file size in bytes. <br>
+> To convert into humand readable version, add ` | awk '/Size/{print $2}' | numfmt --to=iec` at the end of the `xrdfs` command.
+> Only ` | numfmt --to=iec` enough for the `dasgoclient` command.
+
+
+#### XRDCP:: Download Root with XRD Path (root://....)
+
+```
+xrdcp root://cms-xrd-global.cern.ch//store/data/Run2025C/ScoutingPFRun3/HLTSCOUT/v1/000/392/925/00000/b95d5cc9-62b2-4b3b-a0f9-d0d79b52a85d.root .
+```
+
+> [!WARNING]
+> You may need to install XRootD client: `brew install xrootd`
+> If homebrew is not installed: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+
 
 
 ## Useful Links

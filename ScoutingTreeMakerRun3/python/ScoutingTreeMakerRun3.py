@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 import os, re
 
 # --- year/era for JECs
-era_     = '2025C'
+era_     = '2024H'
 jecMode_ = 'txt' # 'es'| 'txt' | 'none' 
 doJetVetoMap = True
 
@@ -19,7 +19,8 @@ process.gtStage2Digis.InputLabel = cms.InputTag( "hltFEDSelectorL1" )
 ## ----------------- Global Tag ------------------
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, '150X_dataRun3_HLT_v1', '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, '150X_dataRun3_HLT_v1', '') ## 2025C
+process.GlobalTag = GlobalTag(process.GlobalTag, '140X_dataRun3_HLT_v3', '') ## 2024H
 #process.GlobalTag = GlobalTag(process.GlobalTag, THISGLOBALTAG, '')
 
 
@@ -37,7 +38,7 @@ process.MessageLogger.cerr.default = cms.untracked.PSet(limit=cms.untracked.int3
 process.MessageLogger.cerr.JEC = cms.untracked.PSet(limit = cms.untracked.int32(1000000000))
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(-1)
+    input = cms.untracked.int32(5000)
 )
 
 
@@ -45,7 +46,8 @@ process.maxEvents = cms.untracked.PSet(
 #------ Note: For grid operation, the provided input below is irrelevant as input data is managed independently within the grid system (e.g., CRAB).
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        'root://cms-xrd-global.cern.ch//store/data/Run2025C/ScoutingPFRun3/HLTSCOUT/v1/000/392/925/00000/b95d5cc9-62b2-4b3b-a0f9-d0d79b52a85d.root'
+        #'root://cms-xrd-global.cern.ch//store/data/Run2025C/ScoutingPFRun3/HLTSCOUT/v1/000/392/925/00000/b95d5cc9-62b2-4b3b-a0f9-d0d79b52a85d.root' ## 2025C
+        'root://cms-xrd-global.cern.ch//store/data/Run2024H/ScoutingPFRun3/HLTSCOUT/v1/000/385/836/00000/003ca643-43f8-40dd-92b3-4c6a4ccdc894.root' ## 2024H
         #'root://cms-xrd-global.cern.ch//store/mc/RunIII2024Summer24DRPremix/QCD_Bin-PT-50to80_TuneCP5_13p6TeV_pythia8/AODSIM/140X_mcRun3_2024_realistic_v26-v2/120000/005210b9-bf51-4f56-be43-814a093fc0af.root'
         #'root://cms-xrd-global.cern.ch//store/mc/RunIII2024Summer24DRPremix/RSGravitonTo2G_kMpl-001_M-450_TuneCP5_13p6TeV_pythia8/AODSIM/140X_mcRun3_2024_realistic_v26-v2/2530000/0bf5c319-aa53-4d83-bd9b-0bb4fbc3446d.root'
     )
@@ -187,7 +189,7 @@ process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
                             genJetsAK4               =  cms.InputTag('slimmedGenJets'                 ),
 
                             # --- Trigger
-                            doL1                     =  cms.bool(False),
+                            doL1                     =  cms.bool(True),
                             doTriggerObjects         =  cms.bool(True),
                             ReadPrescalesFromFile    =  cms.bool(False),
                             l1Seeds                  =  cms.vstring(L1Info),
@@ -202,7 +204,6 @@ process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
 )
 
 
-process.p = cms.Path(process.scoutingTree)
-#process.p = cms.Path(process.gtStage2Digis+process.scoutingTree)
+process.p = cms.Path(process.gtStage2Digis+process.scoutingTree)
 
 

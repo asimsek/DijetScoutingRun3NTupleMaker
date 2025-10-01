@@ -25,6 +25,8 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   l1GtToken_             =  consumes<BXVector<GlobalAlgBlk> >             (iConfig.getParameter<edm::InputTag>("l1GtSrc"));
   ptMinPF_               =  iConfig.getParameter<double>("ptMinPF");
   vtriggerSelection_     =  iConfig.getParameter<vector<string> > ("triggerSelection");
+  doL1_                  =  iConfig.getParameter<bool>("doL1");
+  l1Seeds_               =  iConfig.getParameter<vector<string>>("l1Seeds");
   algTag_                =  iConfig.getParameter<edm::InputTag>("l1GtSrc");
   extTag_                =  iConfig.getParameter<edm::InputTag>("l1GtSrc");
   l1GtUtils_             =  new l1t::L1TGlobalUtil(iConfig, consumesCollector(), *this, algTag_, extTag_, l1t::UseEventSetupIn::Event);
@@ -116,6 +118,7 @@ ScoutingTreeMakerRun3::ScoutingTreeMakerRun3(const edm::ParameterSet& iConfig)
   muMultAK4_        = new vector<int>();      hfHadMultAK4_     = new vector<int>();
   hfEmMultAK4_      = new vector<int>();      jetVetoMapAK4_    = new vector<int>();
   triggerResult_    = new vector<bool>();     triggerName_      = new vector<string>();
+  l1Result_         = new vector<bool>();     l1Name_           = new vector<string>();
   jecLoggedOnce_    = false;
 
 } //----- Parameter Set End
@@ -198,6 +201,10 @@ void ScoutingTreeMakerRun3::beginJob()
   //----- Trigger
   outTree_->Branch("triggerResult"         ,"vector<bool>"       ,&triggerResult_         );
   outTree_->Branch("triggerName"           ,"vector<string>"     ,&triggerName_           );
+
+  //----- L1 branches
+  outTree_->Branch("l1Result"              ,"vector<bool>"       ,&l1Result_              );
+  outTree_->Branch("l1Name"                ,"vector<string>"     ,&l1Name_                );
 
 } //----- beginJob End
 
@@ -375,6 +382,21 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
       } //----- Selected trigger loop
     } //----- All HLT loop
   } //----- if hltresults valid
+
+  //-------------- L1T (Global) --------------
+  if (doL1_) {
+    l1Name_->reserve(l1Seeds_.size());
+    l1Result_->reserve(l1Seeds_.size());
+
+    // Pull decisions for this event
+    l1GtUtils_->retrieveL1(iEvent, iSetup, l1GtToken_);
+    for (const auto& seed : l1Seeds_) {
+      bool accept = false;
+      l1GtUtils_->getFinalDecisionByName(seed, accept);
+      l1Name_->push_back(seed);
+      l1Result_->push_back(accept);
+    }
+  }
 
   //----- At least one good vertex requirement
   //if (recVtxs->size() > 0) {
@@ -647,6 +669,8 @@ void ScoutingTreeMakerRun3::initialize()
   phoMultAK4_         ->clear();
   triggerName_        ->clear();
   triggerResult_      ->clear();
+  l1Name_             ->clear();
+  l1Result_           ->clear();
   elMultAK4_          ->clear();
   muMultAK4_          ->clear();
   hfHadMultAK4_       ->clear();
@@ -662,9 +686,7 @@ void ScoutingTreeMakerRun3::initialize()
 
 
 void ScoutingTreeMakerRun3::endJob() 
-{  
-  delete triggerResult_;
-  delete triggerName_;
+{
   delete ptAK4_;
   delete rawPtAK4_;
   delete etaAK4_;
@@ -699,7 +721,10 @@ void ScoutingTreeMakerRun3::endJob()
   delete jecDownFactorAK4_;
   delete jetVetoMapAK4_;
   delete jetRapidityAK4_;
-
+  delete triggerResult_;
+  delete triggerName_;
+  delete l1Result_;
+  delete l1Name_;
 }
 
 
