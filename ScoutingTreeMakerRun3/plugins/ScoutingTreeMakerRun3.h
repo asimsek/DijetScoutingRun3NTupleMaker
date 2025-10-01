@@ -190,7 +190,7 @@ class ScoutingTreeMakerRun3 : public edm::one::EDAnalyzer<>
     std::vector<float> *ptAK4_, *rawPtAK4_, *etaAK4_, *phiAK4_, *massAK4_, *energyAK4_, *areaAK4_, *chfAK4_, *nhfAK4_, *phfAK4_, *elfAK4_, *mufAK4_;
     std::vector<int> *idLAK4_, *idTAK4_, *chHadMultAK4_, *neHadMultAK4_, *phoMultAK4_;
     std::vector<int> *elMultAK4_, *muMultAK4_, *hfHadMultAK4_, *hfEmMultAK4_;
-    std::vector<float> *hf_hfAK4_, *hf_emfAK4_, *hofAK4_;
+    std::vector<float> *hf_hfAK4_, *hf_emfAK4_, *hofAK4_, *jetRapidityAK4_;
     std::vector<float> *jecFactorAK4_;           // correction factor applied to each jet p4
     std::vector<float> *chEmEAK4_, *neEmEAK4_;   // EM energies from PF candidates
     std::vector<float> *chEmFAK4_, *neEmFAK4_;   // EM energy fractions
