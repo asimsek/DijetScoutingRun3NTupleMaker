@@ -19,8 +19,8 @@ process.gtStage2Digis.InputLabel = cms.InputTag( "hltFEDSelectorL1" )
 ## ----------------- Global Tag ------------------
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 from Configuration.AlCa.GlobalTag import GlobalTag
-#process.GlobalTag = GlobalTag(process.GlobalTag, '150X_dataRun3_HLT_v1', '') ## 2025C
-process.GlobalTag = GlobalTag(process.GlobalTag, '140X_dataRun3_HLT_v3', '') ## 2024H
+process.GlobalTag = GlobalTag(process.GlobalTag, '150X_dataRun3_HLT_v1', '') ## 2025C
+#process.GlobalTag = GlobalTag(process.GlobalTag, '140X_dataRun3_HLT_v3', '') ## 2024H
 #process.GlobalTag = GlobalTag(process.GlobalTag, THISGLOBALTAG, '')
 
 
