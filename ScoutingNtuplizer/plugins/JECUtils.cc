@@ -1,4 +1,4 @@
-#include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/JECUtils.h"
+#include "DijetScoutingRun3NTupleMaker/ScoutingNtuplizer/plugins/JECUtils.h"
 
 
 namespace jec {

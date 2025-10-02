@@ -6,10 +6,10 @@
 
 */
 
-#include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/ScoutingTreeMakerRun3.h"
-#include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/JECUtils.h"
-#include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/JetVetoUtils.h"
-#include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/JECLog.h"
+#include "DijetScoutingRun3NTupleMaker/ScoutingNtuplizer/plugins/ScoutingTreeMakerRun3.h"
+#include "DijetScoutingRun3NTupleMaker/ScoutingNtuplizer/plugins/JECUtils.h"
+#include "DijetScoutingRun3NTupleMaker/ScoutingNtuplizer/plugins/JetVetoUtils.h"
+#include "DijetScoutingRun3NTupleMaker/ScoutingNtuplizer/plugins/JECLog.h"
 
 
 

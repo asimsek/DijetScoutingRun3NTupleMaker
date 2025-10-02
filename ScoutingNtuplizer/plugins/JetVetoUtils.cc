@@ -1,4 +1,4 @@
-#include "DijetScoutingRun3NTupleMaker/ScoutingTreeMakerRun3/plugins/JetVetoUtils.h"
+#include "DijetScoutingRun3NTupleMaker/ScoutingNtuplizer/plugins/JetVetoUtils.h"
 #include <TFile.h>
 #include <TKey.h>
 #include "FWCore/MessageLogger/interface/MessageLogger.h"

@@ -1,4 +1,4 @@
-<library   name="CMSDIJETDijetRootTreeMakerPlugins" file="*.cc">
+<library   name="Run3ScoutingNtuplizerPlugins" file="*.cc">
     <use   name="root"/>
     <use   name="rootrflx"/>
     <use   name="rootcore"/>
