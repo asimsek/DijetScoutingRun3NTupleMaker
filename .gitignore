@@ -25,3 +25,8 @@ __init__.py
 __pycache__
 *.pyc
 *.root
+
+
+#user specified
+submitCrab3Jobs/Output_*
+*.log

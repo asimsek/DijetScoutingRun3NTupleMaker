@@ -54,6 +54,28 @@ cmsRun ScoutingTreeMakerRun3/python/ScoutingTreeMakerRun3.py
 ```
 
 
+### Produce nTuples from dataset on CRAB3
+
+
+#### ScoutingPFRun3 [2024]
+
+```
+python3 createAndSubmitCrab.py -d Output_ScoutingPFRun3 -v ScoutingPFRun3_Run2024C-v1_03October2025 -i Inputs_ScoutingPFRun3/InputList_Run2024C-v1_ScoutingPFRun3.txt -t crab3_template_data.py -c ../ScoutingNtuplizer/python/ScoutingTreeMakerRun3.py --submit
+
+python3 createAndSubmitCrab.py -d Output_ScoutingPFRun3 -v ScoutingPFRun3_Run2024D-v1_03October2025 -i Inputs_ScoutingPFRun3/InputList_Run2024D-v1_ScoutingPFRun3.txt -t crab3_template_data.py -c ../ScoutingNtuplizer/python/ScoutingTreeMakerRun3.py --submit
+
+python3 createAndSubmitCrab.py -d Output_ScoutingPFRun3 -v ScoutingPFRun3_Run2024E-v1_03October2025 -i Inputs_ScoutingPFRun3/InputList_Run2024E-v1_ScoutingPFRun3.txt -t crab3_template_data.py -c ../ScoutingNtuplizer/python/ScoutingTreeMakerRun3.py --submit
+
+python3 createAndSubmitCrab.py -d Output_ScoutingPFRun3 -v ScoutingPFRun3_Run2024F-v1_03October2025 -i Inputs_ScoutingPFRun3/InputList_Run2024F-v1_ScoutingPFRun3.txt -t crab3_template_data.py -c ../ScoutingNtuplizer/python/ScoutingTreeMakerRun3.py --submit
+
+python3 createAndSubmitCrab.py -d Output_ScoutingPFRun3 -v ScoutingPFRun3_Run2024G-v1_03October2025 -i Inputs_ScoutingPFRun3/InputList_Run2024G-v1_ScoutingPFRun3.txt -t crab3_template_data.py -c ../ScoutingNtuplizer/python/ScoutingTreeMakerRun3.py --submit
+
+python3 createAndSubmitCrab.py -d Output_ScoutingPFRun3 -v ScoutingPFRun3_Run2024H-v1_03October2025 -i Inputs_ScoutingPFRun3/InputList_Run2024H-v1_ScoutingPFRun3.txt -t crab3_template_data.py -c ../ScoutingNtuplizer/python/ScoutingTreeMakerRun3.py --submit
+
+python3 createAndSubmitCrab.py -d Output_ScoutingPFRun3 -v ScoutingPFRun3_Run2024I-v1_03October2025 -i Inputs_ScoutingPFRun3/InputList_Run2024I-v1_ScoutingPFRun3.txt -t crab3_template_data.py -c ../ScoutingNtuplizer/python/ScoutingTreeMakerRun3.py --submit
+```
+
+
 
 ## Datasets
 
@@ -293,6 +315,63 @@ edmProvDump root://cms-xrd-global.cern.ch//store/data/Run2025C/ScoutingPFRun3/HL
 ```
 
 
+### 9) How to request dataset transfer with Rucio
+
+##### Prep the environment (once per session)
+
+```
+source /cvmfs/cms.cern.ch/cmsset_default.sh
+source /cvmfs/cms.cern.ch/rucio/setup-py3.sh
+voms-proxy-init -voms cms -rfc -valid 192:00
+export RUCIO_ACCOUNT=${USER}
+rucio whoami
+```
+
+
+##### Check where the dataset lives now
+
+```
+rucio list-dataset-replicas cms:/<Your/Dataset/Name>
+```
+
+
+##### Request a disk replica
+
+> [!WARNING]
+> Replace the site RSE (`T3_US_FNALLPC`) with the site for which you intend to submit a request.
+
+```
+rucio add-rule cms:/ScoutingPFRun3/Run2024H-v1/HLTSCOUT 1 T3_US_FNALLPC --asynchronous --ask-approval
+```
+
+> [!TIP]
+> Provide a descriptive `--comment` for the rule that can be viewed at any time. <br>
+> Provide a `--lifetime` (in seconds), after which the rule will expire and the data protected by the rule will be free for deletion. <br>
+> For reference; 30 days = 2592000 seconds | 3 months = 7776000 sec | 6 months = 15552000 sec
+
+
+
+### 9) LPC EOS Commands
+
+##### Check EOS user quota
+
+```
+eosquota
+```
+
+##### Check EOS group quota
+
+```
+eosgrpquota lpcjj
+```
+
+##### Find the members of the eos group area
+
+```
+getent group | grep ^lpcjj
+```
+
+
 ## Useful Links
 
  + [Run3 Luminosity and uncertainty recommendations](https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3)
@@ -302,6 +381,8 @@ edmProvDump root://cms-xrd-global.cern.ch//store/data/Run2025C/ScoutingPFRun3/HL
  + [Run3 PdmV](https://twiki.cern.ch/twiki/bin/view/CMS/PdmVRun3Analysis)
  + [JES/JER for Run3 Scouting](https://twiki.cern.ch/twiki/bin/view/CMSPublic/)
  + [CMS Connect to submit jobs to CERN HTCondor (faster than the LPC condor)](https://uscms.org/uscms_at_work/computing/setup/batch_systems.shtml#CMSConnect)
-
+ + [Rucio CLI Twiki](https://twiki.cern.ch/twiki/bin/view/CMS/TheRucioCLI)
+ + [Rucio WebUI](https://cms-rucio-webui.cern.ch/r2d2/request)
+ + [LPC EOS Guidelines](https://www.uscms.org/uscms_at_work/computing/LPC/usingEOSAtLPC.shtml)
 
 
