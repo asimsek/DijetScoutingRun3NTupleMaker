@@ -130,13 +130,14 @@ def render_template_text(text: str, tokens: Dict[str, str]) -> str:
         out.append(line)
     return "".join(out)
 
-# ----- CMSSW cfg patching (era + tokens + maxEvents) -----
+# ----- comment/uncomment helpers -----
 def _comment(line: str) -> str:
-    return line if line.lstrip().startswith('#') else re.sub(r"^(\s*)", r"\1#", line)
+    return line if line.lstrip().startswith('#') else re.sub(r"^(\s*)", r"\1# ", line)
 
 def _uncomment(line: str) -> str:
     return re.sub(r"^(\s*)#\s*", r"\1", line)
 
+# ----- ensure maxEvents = -1 in CMSSW cfg -----
 def _ensure_maxevents_minus1(text: str) -> str:
     """
     Force process.maxEvents input to -1.
@@ -154,7 +155,7 @@ def _ensure_maxevents_minus1(text: str) -> str:
         return text[:idx] + canon + text[idx:]
 
     start_pset = m.start()
-    i = m.end()   # after '('
+    i = m.end()
     depth = 1
     j = i
     while j < len(text) and depth > 0:
@@ -198,6 +199,75 @@ def patch_cmssw_cfg_text(text: str, era: Optional[str]) -> Tuple[str, Dict[str, 
         'has_token_globaltag': has_token_globaltag,
         'has_token_rootfile': has_token_rootfile,
     }
+
+# ----- outLFNDirBase year patching in CRAB template -----
+def _infer_year_from(era: Optional[str], dataset: Optional[str], processing: Optional[str]) -> Optional[str]:
+    # 1) Try era like "2024H" -> 2024
+    if era:
+        m = re.search(r"(20\d{2})", era)
+        if m:
+            return m.group(1)
+    # 2) Try processing like "Run2024X"
+    if processing:
+        m = re.search(r"Run(20\d{2})", processing)
+        if m:
+            return m.group(1)
+    # 3) Try full dataset string
+    if dataset:
+        m = re.search(r"Run(20\d{2})", dataset)
+        if m:
+            return m.group(1)
+    return None
+
+def _ensure_trailing_year(path: str, year: str) -> str:
+    # Normalize: ensure single trailing /<year>/ at end
+    # Replace existing trailing /YYYY[/]? with target year
+    if re.search(r"/\d{4}/?$", path):
+        path = re.sub(r"/\d{4}/?$", f"/{year}/", path)
+    else:
+        if not path.endswith('/'):
+            path += '/'
+        path += f"{year}/"
+    # Collapse any accidental '//' (keep leading 'root://' style untouched; not relevant here)
+    path = re.sub(r"(?<!:)//+", "/", path)
+    return path
+
+def patch_crab_outlfn_year(text: str, year: Optional[str]) -> Tuple[str, Optional[str]]:
+    """
+    - Find all lines with config.Data.outLFNDirBase
+    - Comment all but the last occurrence
+    - Ensure the last occurrence is active and ends with '/<year>/'
+    - If year is None or no line found, return original text and None
+    """
+    if not year:
+        return text, None
+
+    lines = text.splitlines(keepends=False)
+    idxs = [i for i, ln in enumerate(lines) if 'config.Data.outLFNDirBase' in ln]
+
+    if not idxs:
+        return text, None
+
+    # Comment all but last
+    for i in idxs[:-1]:
+        lines[i] = _comment(lines[i])
+
+    last_i = idxs[-1]
+    line = _uncomment(lines[last_i])
+
+    # Replace the quoted path
+    m = re.search(r"(config\.Data\.outLFNDirBase\s*=\s*)([\"'])(.*?)(\2)", line)
+    applied_path: Optional[str] = None
+    if m:
+        quote = m.group(2)
+        curr = m.group(3).strip()
+        newp = _ensure_trailing_year(curr, year)
+        applied_path = newp
+        line = line[:m.start(3)] + newp + line[m.end(3):]
+    # If no match, leave line as-is (already uncommented)
+    lines[last_i] = line
+
+    return ("\n".join(lines) + "\n"), applied_path
 
 # ========================= Main ===========================
 def main() -> None:
@@ -283,6 +353,7 @@ def main() -> None:
         secondary_dataset=secondary,
     )
 
+    # --------- CMSSW: patch & write ----------
     cmssw_template_text = template_cmssw.read_text()
     tokens_cmssw = dict(tokens)
 
@@ -296,7 +367,6 @@ def main() -> None:
             and '"THISROOTFILE"' not in cmssw_template_text):
         tokens_cmssw["THISROOTFILE"] = f"'{tokens_cmssw['THISROOTFILE']}'"
 
-    # Patch & write CMSSW cfg
     patched_text, checks = patch_cmssw_cfg_text(cmssw_template_text, era)
     if not checks.get('has_token_globaltag', False):
         err("Template must have active THISGLOBALTAG line.")
@@ -308,7 +378,7 @@ def main() -> None:
     final_cmssw = render_template_text(patched_text, tokens_cmssw)
     cmssw_cfg_path.write_text(final_cmssw)
 
-    # Syntax check (catch issues early)
+    # Syntax check early
     try:
         py_compile.compile(str(cmssw_cfg_path), doraise=True)
     except py_compile.PyCompileError as e:
@@ -316,18 +386,27 @@ def main() -> None:
         print(e.msg)
         sys.exit(1)
 
-    # Render & write CRAB cfg
+    # --------- CRAB: patch outLFNDirBase year, render & write ----------
     crab_text = Path(template_crab).read_text()
-    final_crab = render_template_text(crab_text, tokens)
+
+    # Infer target year from era/dataset
+    target_year = _infer_year_from(era=era, dataset=dataset, processing=processing)
+
+    crab_text_patched, applied_lfn = patch_crab_outlfn_year(crab_text, target_year)
+    final_crab = render_template_text(crab_text_patched, tokens)
     crab_cfg_path.write_text(final_crab)
 
-    # Minimal, bright, and crisp output
+    # --------- Minimal, bright output ----------
     ok(f"Prepared: {dataset}")
     print(f"      \033[91mEra:\033[0m {era if era else '(template)'}")
+    if applied_lfn:
+        print(f"      \033[91mLFN:\033[0m .../{applied_lfn.strip('/').split('/')[-1]}/")
+    else:
+        print(f"      \033[91mLFN:\033[0m (unchanged)")
     print(f"      \033[91mCMSSW:\033[0m {cmssw_cfg_path}")
     print(f"      \033[91mCRAB:\033[0m {crab_cfg_path}")
 
-    # Optional submission
+    # --------- Optional submission ----------
     if args.submit:
         if shutil.which('crab') is None:
             err("'crab' not found in PATH.")
@@ -335,13 +414,11 @@ def main() -> None:
 
         info("Submitting...")
         try:
-            # Capture output to extract essentials
             cp = subprocess.run(
                 ['crab', 'submit', '-c', str(crab_cfg_path)],
                 text=True, capture_output=True, check=True
             )
             out_all = (cp.stdout or "") + (cp.stderr or "")
-            # Extract essentials
             task_name = re.search(r"Task name:\s*(.+)", out_all)
             project_dir = re.search(r"Project dir:\s*(.+)", out_all)
             log_file = re.search(r"Log file is\s*(.+)", out_all)
@@ -356,14 +433,12 @@ def main() -> None:
         except subprocess.CalledProcessError as e:
             out_all = (e.stdout or "") + (e.stderr or "")
             err(f"CRAB submission failed (exit {e.returncode}).")
-            # Try to surface the CRAB workdir/log if present
             m_proj = re.search(r"Project dir:\s*(.+)", out_all)
             m_log = re.search(r"Log file is\s*(.+)", out_all)
             if m_proj:
                 print(f"      \033[91mWorkdir:\033[0m {m_proj.group(1).strip()}")
             if m_log:
                 print(f"      \033[91mLog:\033[0m {m_log.group(1).strip()}")
-            # Show a short tail of the output to help
             tail = "\n".join(out_all.strip().splitlines()[-20:])
             if tail:
                 print(_c("  --- crab output (tail) ---", C.Y))

@@ -20,7 +20,7 @@ config.Data.splitting = 'LumiBased'
 #config.Data.splitting = 'Automatic'
 config.Data.publication = False
 #config.Data.lumiMask = '../data/json/Cert_Collisions2024_378981_386951_Golden.json'
-config.Data.outLFNDirBase = '/store/group/lpcjj/CaloScouting/Run3PFScouting/rootTrees_big/2024/ScoutingPFRun3/'
+config.Data.outLFNDirBase = '/store/group/lpcjj/Run3PFScouting/rootTrees_big/2024/'
 #config.Data.ignoreLocality = True
 
 config.section_('User')
