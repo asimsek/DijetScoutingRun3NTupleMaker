@@ -57,7 +57,7 @@ process.source = cms.Source("PoolSource",
 #-----------------------------------------------------------------------#
 #------------------ JEC reading from config file  -----------------------
 #-----------------------------------------------------------------------#
-from DijetScoutingRun3NTupleMaker.ScoutingTreeMakerRun3.configs.jec_utils import (
+from DijetScoutingRun3NTupleMaker.ScoutingNtuplizer.configs.jec_utils import (
     infer_era_from_filenames,
     load_jec_config_text,
     get_era_block,
@@ -124,12 +124,13 @@ L1Info = ['L1_HTT120er', 'L1_HTT160er', 'L1_HTT200er', 'L1_HTT255er', 'L1_HTT280
 HLT_Info = cms.vstring("DST_PFScouting_JetHT_v", "DST_PFScouting_SingleMuon_v", "HLT_Mu50_v", "HLT_Mu55_v", "HLT_IsoMu24_v", "HLT_IsoMu20_v", "HLT_IsoMu27_v",
     "HLT_PFHT180_v", "HLT_PFHT180_v", "HLT_PFHT350_v", "HLT_PFHT370_v", "HLT_PFHT430_v", "HLT_PFHT510_v", "HLT_PFHT590_v",
     "HLT_PFJet40_v", "HLT_PFJet60_v", "HLT_PFJet80_v", "HLT_PFJet140_v", "HLT_PFJet200_v", "HLT_PFJet260_v", "HLT_PFJet320_v", "HLT_PFJet400_v", "HLT_PFJet450_v", "HLT_PFJet500_v", "HLT_PFJet550_v", 
-    "DST_PFScouting_ZeroBias_v", "DST_PFScouting_AXOTight_v", "DST_PFScouting_AXOVLoose_v", "DST_PFScouting_AXOLoose_v", "DST_PFScouting_AXOVTight_v", "DST_PFScouting_SinglePhotonEB_v", "DST_PFScouting_CICADAVLoose_v", "DST_PFScouting_CICADALoose_v", "DST_PFScouting_CICADAMedium_v", "DST_PFScouting_CICADATight_v", "DST_PFScouting_CICADAVTight_v")
+    "DST_PFScouting_ZeroBias_v", "DST_PFScouting_AXOTight_v", "DST_PFScouting_AXOVLoose_v", "DST_PFScouting_AXOLoose_v", "DST_PFScouting_AXOVTight_v", "DST_PFScouting_SinglePhotonEB_v", 
+    "DST_PFScouting_CICADAVLoose_v", "DST_PFScouting_CICADALoose_v", "DST_PFScouting_CICADAMedium_v", "DST_PFScouting_CICADATight_v", "DST_PFScouting_CICADAVTight_v")
 
 HLT_Alias = cms.vstring([ (s.replace("DST_", "")[:-2] if s.endswith("_v") else s.replace("DST_", "")) for s in HLT_Info ]) #------ Remove prefix and suffixes ("DST_" and "_v") for trigger alias
 
 
-process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
+process.dijetScouting = cms.EDAnalyzer('ScoutingTreeMakerRun3',
                             ptMinPF                  =  cms.double(15),
 
                             # --- Jet veto maps ---
@@ -205,6 +206,6 @@ process.scoutingTree = cms.EDAnalyzer('ScoutingTreeMakerRun3',
 )
 
 
-process.p = cms.Path(process.gtStage2Digis+process.scoutingTree)
+process.p = cms.Path(process.gtStage2Digis+process.dijetScouting)
 
 

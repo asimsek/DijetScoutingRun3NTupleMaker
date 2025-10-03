@@ -450,6 +450,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
   nPFJets_ = 0;
   int vetoCount = 0;
   float htAK4 = 0.0;
+  float htAK4_raw = 0.0;
   TLorentzVector vP4AK4;
   for (unsigned idx : passIdx) {
     const auto& ijet    =   PFJets->at(idx);
@@ -537,6 +538,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
     int inVeto = jetveto::flagFromMap(jetVetoMap_.get(), eta, phi);
 
     htAK4 += pt_corr;
+    htAK4_raw += pt_raw;
     if (inVeto) ++vetoCount;
 
     ptAK4_             ->push_back(pt_corr);
@@ -579,7 +581,7 @@ void ScoutingTreeMakerRun3::analyze(const Event& iEvent, const EventSetup& iSetu
   nJetInVetoMap_     =  vetoCount;
   nPFJets_           =  static_cast<int>(ptAK4_->size());
   htAK4_             =  htAK4;
-  unclusteredEnFrac_ =  (sumEt_>0.f)  ?  ((sumEt_ - htAK4_) / sumEt_) : -1.0f;
+  unclusteredEnFrac_ = (sumEt_ > 0.f) ? ((sumEt_ - htAK4_raw) / sumEt_) : -1.0f;
 
   //----- Fake-MET detection:
   //----- Compute min DeltaPhi between MET and the leading (up to N=2 and N=4) jets.
