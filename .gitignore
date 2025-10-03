@@ -28,5 +28,5 @@ __pycache__
 
 
 #user specified
-submitCrab3Jobs/Output_*
+submitCrabJobs/Output_*
 *.log
