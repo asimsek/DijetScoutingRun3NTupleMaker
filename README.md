@@ -351,7 +351,7 @@ rucio add-rule cms:/ScoutingPFRun3/Run2024H-v1/HLTSCOUT 1 T3_US_FNALLPC --asynch
 
 
 
-### 9) LPC EOS Commands
+### 10) LPC EOS Commands
 
 ##### Check EOS user quota
 
